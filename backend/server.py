@@ -244,9 +244,8 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
 # ========== PROJECT ROUTES ==========
 
 @api_router.post("/projects", response_model=Project)
-async def create_project(payload: ProjectCreate, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def create_project(payload: ProjectCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     project_id = f"proj_{uuid.uuid4().hex[:12]}"
     project_doc = {
