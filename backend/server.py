@@ -278,9 +278,8 @@ async def get_projects(session_token: Optional[str] = Cookie(None), authorizatio
     return projects
 
 @api_router.get("/projects/{project_id}", response_model=Project)
-async def get_project(project_id: str, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def get_project(project_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     project = await db.projects.find_one({"project_id": project_id}, {"_id": 0})
     if not project:
