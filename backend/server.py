@@ -299,9 +299,8 @@ async def update_project(project_id: str, updates: dict, session_token: Optional
 # ========== PROPOSAL ROUTES ==========
 
 @api_router.post("/proposals", response_model=Proposal)
-async def create_proposal(payload: ProposalCreate, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def create_proposal(payload: ProposalCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     proposal_id = f"prop_{uuid.uuid4().hex[:12]}"
     proposal_doc = {
@@ -323,9 +322,8 @@ async def create_proposal(payload: ProposalCreate, user: User = Cookie(None)):
     return Proposal(**proposal_doc)
 
 @api_router.get("/proposals", response_model=List[Proposal])
-async def get_proposals(user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def get_proposals(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     proposals = await db.proposals.find({}, {"_id": 0}).to_list(1000)
     for prop in proposals:
@@ -334,9 +332,8 @@ async def get_proposals(user: User = Cookie(None)):
     return proposals
 
 @api_router.post("/proposals/{proposal_id}/approve")
-async def approve_proposal(proposal_id: str, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def approve_proposal(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
     if not proposal:
@@ -354,9 +351,8 @@ async def approve_proposal(proposal_id: str, user: User = Cookie(None)):
     return {"message": "Proposal approved"}
 
 @api_router.post("/proposals/{proposal_id}/convert")
-async def convert_to_project(proposal_id: str, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def convert_to_project(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
     if not proposal:
@@ -393,9 +389,8 @@ async def convert_to_project(proposal_id: str, user: User = Cookie(None)):
 # ========== TASK ROUTES ==========
 
 @api_router.post("/tasks", response_model=Task)
-async def create_task(payload: TaskCreate, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def create_task(payload: TaskCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     task_id = f"task_{uuid.uuid4().hex[:12]}"
     task_doc = {
@@ -426,9 +421,8 @@ async def create_task(payload: TaskCreate, user: User = Cookie(None)):
     return Task(**task_doc)
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks(project_id: Optional[str] = None, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def get_tasks(project_id: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     query = {}
     if project_id:
@@ -441,9 +435,8 @@ async def get_tasks(project_id: Optional[str] = None, user: User = Cookie(None))
     return tasks
 
 @api_router.patch("/tasks/{task_id}")
-async def update_task(task_id: str, updates: dict, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def update_task(task_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     await db.tasks.update_one({"task_id": task_id}, {"$set": updates})
     return {"message": "Task updated"}
@@ -451,9 +444,8 @@ async def update_task(task_id: str, updates: dict, user: User = Cookie(None)):
 # ========== TIME TRACKING ROUTES ==========
 
 @api_router.post("/time-logs", response_model=TimeLog)
-async def create_time_log(payload: TimeLogCreate, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def create_time_log(payload: TimeLogCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     log_id = f"log_{uuid.uuid4().hex[:12]}"
     log_doc = {
@@ -472,9 +464,8 @@ async def create_time_log(payload: TimeLogCreate, user: User = Cookie(None)):
     return TimeLog(**log_doc)
 
 @api_router.get("/time-logs", response_model=List[TimeLog])
-async def get_time_logs(task_id: Optional[str] = None, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def get_time_logs(task_id: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     query = {}
     if task_id:
@@ -489,9 +480,8 @@ async def get_time_logs(task_id: Optional[str] = None, user: User = Cookie(None)
 # ========== TEAM ROUTES ==========
 
 @api_router.get("/team", response_model=List[User])
-async def get_team_members(user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def get_team_members(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     users = await db.users.find({}, {"_id": 0}).to_list(1000)
     for u in users:
@@ -500,9 +490,8 @@ async def get_team_members(user: User = Cookie(None)):
     return users
 
 @api_router.patch("/team/{user_id}")
-async def update_team_member(user_id: str, updates: dict, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def update_team_member(user_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     if user.role not in ["admin", "manager"]:
         raise HTTPException(status_code=403, detail="Not authorized")
