@@ -290,9 +290,8 @@ async def get_project(project_id: str, session_token: Optional[str] = Cookie(Non
     return Project(**project)
 
 @api_router.patch("/projects/{project_id}")
-async def update_project(project_id: str, updates: dict, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def update_project(project_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     await db.projects.update_one({"project_id": project_id}, {"$set": updates})
     return {"message": "Project updated"}
