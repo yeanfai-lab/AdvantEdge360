@@ -234,9 +234,8 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
     return user
 
 @api_router.post("/auth/logout")
-async def logout(response: Response, user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def logout(response: Response, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     await db.user_sessions.delete_many({"user_id": user.user_id})
     response.delete_cookie(key="session_token", path="/")
