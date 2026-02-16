@@ -146,11 +146,15 @@ export const TasksPage = () => {
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.project_id} value={project.project_id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
+                      {projects.length > 0 ? (
+                        projects.map((project) => (
+                          <SelectItem key={project.project_id} value={project.project_id || 'placeholder'}>
+                            {project.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-projects" disabled>No projects available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
