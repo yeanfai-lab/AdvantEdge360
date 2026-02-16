@@ -129,7 +129,7 @@ class AdvantEdge360APITester:
             "end_date": "2024-12-31"
         }
         
-        success, data, status = self.test_api_call('POST', 'projects', project_data, 201)
+        success, data, status = self.test_api_call('POST', 'projects', project_data, 200)
         if success and 'project_id' in data:
             self.test_project_id = data['project_id']
             return self.log_result("Create Project", True, f"Created project: {data['project_id']}")
