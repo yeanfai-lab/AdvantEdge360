@@ -145,11 +145,15 @@ export const TimeTrackingPage = () => {
                     <SelectValue placeholder="Select task" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tasks.map((task) => (
-                      <SelectItem key={task.task_id} value={task.task_id}>
-                        {task.title}
-                      </SelectItem>
-                    ))}
+                    {tasks.length > 0 ? (
+                      tasks.map((task) => (
+                        <SelectItem key={task.task_id} value={task.task_id || 'placeholder'}>
+                          {task.title}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-tasks" disabled>No tasks available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
