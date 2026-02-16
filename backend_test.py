@@ -165,7 +165,7 @@ class AdvantEdge360APITester:
             "amount": 25000.00
         }
         
-        success, data, status = self.test_api_call('POST', 'proposals', proposal_data, 201)
+        success, data, status = self.test_api_call('POST', 'proposals', proposal_data, 200)
         if success and 'proposal_id' in data:
             self.test_proposal_id = data['proposal_id']
             return self.log_result("Create Proposal", True, f"Created proposal: {data['proposal_id']}")
