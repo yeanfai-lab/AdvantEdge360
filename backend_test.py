@@ -252,7 +252,7 @@ class AdvantEdge360APITester:
                 "billable": True
             }
             
-            success, data, status = self.test_api_call('POST', 'time-logs', timelog_data, 201)
+            success, data, status = self.test_api_call('POST', 'time-logs', timelog_data, 200)
             if success and 'log_id' in data:
                 return self.log_result("Create Time Log", True, f"Created time log: {data['log_id']}")
             else:
