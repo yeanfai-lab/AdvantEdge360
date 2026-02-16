@@ -199,11 +199,15 @@ export const TasksPage = () => {
                         <SelectValue placeholder="Unassigned" />
                       </SelectTrigger>
                       <SelectContent>
-                        {teamMembers.map((member) => (
-                          <SelectItem key={member.user_id} value={member.user_id}>
-                            {member.name}
-                          </SelectItem>
-                        ))}
+                        {teamMembers.length > 0 ? (
+                          teamMembers.map((member) => (
+                            <SelectItem key={member.user_id} value={member.user_id || 'placeholder'}>
+                              {member.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-members" disabled>No team members</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
