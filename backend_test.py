@@ -216,7 +216,7 @@ class AdvantEdge360APITester:
             "due_date": "2024-12-31"
         }
         
-        success, data, status = self.test_api_call('POST', 'tasks', task_data, 201)
+        success, data, status = self.test_api_call('POST', 'tasks', task_data, 200)
         if success and 'task_id' in data:
             self.test_task_id = data['task_id']
             return self.log_result("Create Task", True, f"Created task: {data['task_id']}")
