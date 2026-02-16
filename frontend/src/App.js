@@ -23,10 +23,10 @@ function AppRouter() {
 
   return (
     <Routes>
-      <Route path=\"/login\" element={<LoginPage />} />
-      <Route path=\"/\" element={<Navigate to=\"/dashboard\" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route
-        path=\"/dashboard\"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <AppLayout>
@@ -36,7 +36,7 @@ function AppRouter() {
         }
       />
       <Route
-        path=\"/projects\"
+        path="/projects"
         element={
           <ProtectedRoute>
             <AppLayout>
@@ -46,7 +46,7 @@ function AppRouter() {
         }
       />
       <Route
-        path=\"/proposals\"
+        path="/proposals"
         element={
           <ProtectedRoute>
             <AppLayout>
@@ -56,7 +56,7 @@ function AppRouter() {
         }
       />
       <Route
-        path=\"/tasks\"
+        path="/tasks"
         element={
           <ProtectedRoute>
             <AppLayout>
@@ -66,7 +66,7 @@ function AppRouter() {
         }
       />
       <Route
-        path=\"/team\"
+        path="/team"
         element={
           <ProtectedRoute>
             <AppLayout>
@@ -76,7 +76,7 @@ function AppRouter() {
         }
       />
       <Route
-        path=\"/time-tracking\"
+        path="/time-tracking"
         element={
           <ProtectedRoute>
             <AppLayout>
@@ -95,7 +95,7 @@ function App() {
       <BrowserRouter>
         <AppRouter />
       </BrowserRouter>
-      <Toaster position=\"top-right\" richColors />
+      <Toaster position="top-right" richColors />
     </AuthProvider>
   );
 }
