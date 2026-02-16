@@ -1,0 +1,182 @@
+{
+  "identity": {
+    "name": "AdvantEdge360",
+    "mission": "Integrated business operations platform emphasizing clarity, precision, and comprehensive control.",
+    "tone": "Professional, Minimalist, Spacious, Authoritative",
+    "archetype": "Swiss & High-Contrast"
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Plus Jakarta Sans, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-4xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold tracking-tight",
+      "h4": "text-xl font-medium tracking-tight",
+      "body": "text-base font-normal leading-relaxed",
+      "small": "text-sm font-medium text-muted-foreground"
+    },
+    "weights": {
+      "light": 300,
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "hsl(222.2 47.4% 11.2%)",
+        "foreground": "hsl(210 40% 98%)",
+        "hover": "hsl(222.2 47.4% 15%)"
+      },
+      "secondary": {
+        "DEFAULT": "hsl(210 40% 96.1%)",
+        "foreground": "hsl(222.2 47.4% 11.2%)"
+      },
+      "accent": {
+        "DEFAULT": "hsl(14.8 96% 62.7%)",
+        "foreground": "hsl(0 0% 100%)",
+        "description": "Use sparingly for primary CTAs and critical alerts"
+      },
+      "background": {
+        "DEFAULT": "hsl(0 0% 100%)",
+        "alt": "hsl(210 40% 98%)"
+      },
+      "muted": {
+        "DEFAULT": "hsl(210 40% 96.1%)",
+        "foreground": "hsl(215.4 16.3% 46.9%)"
+      },
+      "border": "hsl(214.3 31.8% 91.4%)",
+      "chart": {
+        "1": "hsl(222.2 47.4% 11.2%)",
+        "2": "hsl(14.8 96% 62.7%)",
+        "3": "hsl(199 89% 48%)",
+        "4": "hsl(150 90% 35%)",
+        "5": "hsl(280 65% 60%)"
+      }
+    },
+    "theme_strategy": "Light mode default for data density. Dark mode available via toggle.",
+    "forbidden": {
+      "colors": ["#1B93A4 (Teal for dashboard)", "#7351B7 (Purple for CTA)"],
+      "patterns": ["Generic full-screen gradients", "Neumorphism everywhere"]
+    }
+  },
+  "spacing": {
+    "base_scale": 4,
+    "container_padding": "p-6 md:p-8 lg:p-12",
+    "section_gap": "gap-8",
+    "item_gap": "gap-4",
+    "border_radius": {
+      "sm": "rounded-sm",
+      "md": "rounded-md",
+      "lg": "rounded-lg",
+      "full": "rounded-full"
+    }
+  },
+  "layout": {
+    "grid_system": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,auto)]",
+      "form": "grid grid-cols-1 md:grid-cols-2 gap-6",
+      "list": "flex flex-col gap-4"
+    },
+    "containers": {
+      "main": "container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+      "card": "bg-card text-card-foreground rounded-lg border shadow-sm"
+    },
+    "alignment": {
+      "headers": "text-left",
+      "actions": "justify-end",
+      "forms": "items-start"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md transition-all active:scale-95",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2 rounded-md",
+      "ghost": "hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 rounded-md",
+      "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 py-2 rounded-md"
+    },
+    "cards": {
+      "base": "rounded-lg border bg-card text-card-foreground shadow-sm p-6 flex flex-col gap-4",
+      "hover_effect": "hover:shadow-md transition-shadow duration-200"
+    },
+    "inputs": {
+      "base": "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "badges": {
+      "base": "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+      "variants": {
+        "default": "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        "secondary": "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        "outline": "text-foreground"
+      }
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "sm": "shadow-sm",
+      "md": "shadow-md",
+      "lg": "shadow-lg",
+      "xl": "shadow-xl"
+    },
+    "glassmorphism": {
+      "header": "bg-background/80 backdrop-blur-md border-b",
+      "overlay": "bg-background/80 backdrop-blur-sm"
+    },
+    "motion": {
+      "default_transition": "transition-all duration-200 ease-in-out",
+      "hover_lift": "hover:-translate-y-1 transition-transform duration-200",
+      "fade_in": "animate-in fade-in zoom-in-95 duration-300"
+    }
+  },
+  "assets": {
+    "images": {
+      "login_bg": "https://images.pexels.com/photos/18435276/pexels-photo-18435276.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "architecture_abstract": "https://images.pexels.com/photos/34742384/pexels-photo-34742384.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "team_meeting": "https://images.unsplash.com/photo-1748346674126-8c0df10f2f61?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "team_working": "https://images.unsplash.com/photo-1633457897190-8c8c23a12c4c?crop=entropy&cs=srgb&fm=jpg&q=85"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-width=1.5 w-5 h-5"
+    }
+  },
+  "accessibility": {
+    "rules": [
+      "Ensure all interactive elements have aria-labels if no text is present.",
+      "Maintain a contrast ratio of at least 4.5:1 for normal text.",
+      "Use semantic HTML tags (nav, main, article, section, aside).",
+      "Support keyboard navigation for all interactive components."
+    ],
+    "testing": "All interactive elements must include a 'data-testid' attribute (kebab-case)."
+  },
+  "universal_guidelines": [
+    "Do not use generic centered layouts for dashboards.",
+    "Use 2-3x more spacing than typical designs.",
+    "Every interaction needs micro-animations (hover, focus, active).",
+    "Use 'sonner' for toasts.",
+    "Components MUST use named exports.",
+    "Pages MUST use default exports.",
+    "Dark colors look good when used independently without gradients.",
+    "Avoid the 'Center-Everything Disease'; align left for readability.",
+    "Create depth through layered design elements with z-index hierarchy."
+  ],
+  "instructions_to_main_agent": {
+    "setup": [
+      "Install dependencies: lucide-react, recharts, framer-motion, sonner, date-fns, react-day-picker, clsx, tailwind-merge, @radix-ui/react- slot",
+      "Ensure tailwind.config.js extends the theme with the provided colors and spacing."
+    ],
+    "implementation": [
+      "Start with the Layout components (Sidebar, Header, MainWrapper).",
+      "Implement the Dashboard with the Bento Grid layout.",
+      "Build reusable UI components based on Shadcn/UI patterns but customized with the design tokens.",
+      "Ensure all forms use React Hook Form and Zod for validation.",
+      "Use Recharts for all data visualization with the specified chart colors."
+    ]
+  }
+}
