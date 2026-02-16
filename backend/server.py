@@ -268,9 +268,8 @@ async def create_project(payload: ProjectCreate, session_token: Optional[str] = 
     return Project(**project_doc)
 
 @api_router.get("/projects", response_model=List[Project])
-async def get_projects(user: User = Cookie(None)):
-    if not user:
-        user = await get_user_from_token()
+async def get_projects(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
     
     projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
     for proj in projects:
