@@ -583,6 +583,374 @@ async def update_client(client_id: str, updates: dict, session_token: Optional[s
     await db.clients.update_one({"client_id": client_id}, {"$set": updates})
     return {"message": "Client updated"}
 
+
+# ========== CLIENT COMPREHENSIVE VIEW ==========
+
+@api_router.get("/clients/{client_id}/overview")
+async def get_client_overview(client_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    client = await db.clients.find_one({"client_id": client_id}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Get all related data
+    projects = await db.projects.find({"client_name": client["name"]}, {"_id": 0}).to_list(1000)
+    proposals = await db.proposals.find({"client_name": client["name"]}, {"_id": 0}).to_list(1000)
+    
+    # Get invoices and expenses (if user has access)
+    invoices = []
+    total_revenue = 0
+    pending_revenue = 0
+    if user.role in ["admin", "manager", "finance"]:
+        invoices = await db.invoices.find({"client_id": client_id}, {"_id": 0}).to_list(1000)
+        total_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "paid")
+        pending_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "pending")
+    
+    # Get email communications
+    emails = await db.client_emails.find({"client_id": client_id}, {"_id": 0}).sort("date", -1).limit(50).to_list(1000)
+    
+    # Get tasks related to client projects
+    project_ids = [p["project_id"] for p in projects]
+    tasks = await db.tasks.find({"project_id": {"$in": project_ids}}, {"_id": 0}).to_list(1000) if project_ids else []
+    
+    return {
+        "client": client,
+        "projects": {
+            "total": len(projects),
+            "active": len([p for p in projects if p.get("status") == "active"]),
+            "list": projects
+        },
+        "proposals": {
+            "total": len(proposals),
+            "approved": len([p for p in proposals if p.get("status") == "approved"]),
+            "list": proposals
+        },
+        "finance": {
+            "total_revenue": total_revenue,
+            "pending_revenue": pending_revenue,
+            "invoices": invoices
+        } if user.role in ["admin", "manager", "finance"] else None,
+        "tasks": {
+            "total": len(tasks),
+            "completed": len([t for t in tasks if t.get("status") == "done"]),
+            "list": tasks[:10]  # Latest 10 tasks
+        },
+        "communications": {
+            "total": len(emails),
+            "recent": emails[:10]  # Latest 10 emails
+        }
+    }
+
+# ========== GOOGLE DRIVE INTEGRATION ==========
+
+@api_router.get("/drive/connect")
+async def connect_drive(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    try:
+        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/drive/callback"
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.getenv("GOOGLE_CLIENT_ID", ""),
+                    "client_secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [redirect_uri]
+                }
+            },
+            scopes=['https://www.googleapis.com/auth/drive.readonly'],
+            redirect_uri=redirect_uri
+        )
+        
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent',
+            state=user.user_id
+        )
+        
+        return {"authorization_url": authorization_url}
+    
+    except Exception as e:
+        logger.error(f"Failed to initiate Drive OAuth: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to initiate Google Drive connection")
+
+@api_router.get("/drive/callback")
+async def drive_callback(code: str = Query(...), state: str = Query(...)):
+    try:
+        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/drive/callback"
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.getenv("GOOGLE_CLIENT_ID", ""),
+                    "client_secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [redirect_uri]
+                }
+            },
+            scopes=None,
+            redirect_uri=redirect_uri
+        )
+        
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        
+        await db.drive_credentials.update_one(
+            {"user_id": state},
+            {"$set": {
+                "user_id": state,
+                "access_token": credentials.token,
+                "refresh_token": credentials.refresh_token,
+                "token_uri": credentials.token_uri,
+                "client_id": credentials.client_id,
+                "client_secret": credentials.client_secret,
+                "scopes": credentials.scopes,
+                "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        
+        frontend_url = os.getenv("REACT_APP_BACKEND_URL", "").replace("/api", "")
+        return RedirectResponse(url=f"{frontend_url}/proposals?drive_connected=true")
+    
+    except Exception as e:
+        logger.error(f"Drive callback failed: {str(e)}")
+        raise HTTPException(status_code=400, detail="Google Drive connection failed")
+
+async def get_drive_service(user_id: str):
+    creds_doc = await db.drive_credentials.find_one({"user_id": user_id})
+    if not creds_doc:
+        return None
+    
+    creds = Credentials(
+        token=creds_doc["access_token"],
+        refresh_token=creds_doc.get("refresh_token"),
+        token_uri=creds_doc["token_uri"],
+        client_id=creds_doc["client_id"],
+        client_secret=creds_doc["client_secret"],
+        scopes=creds_doc["scopes"]
+    )
+    
+    if creds.expired and creds.refresh_token:
+        creds.refresh(GoogleRequest())
+        await db.drive_credentials.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "access_token": creds.token,
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return build('drive', 'v3', credentials=creds)
+
+@api_router.get("/drive/files")
+async def list_drive_files(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    service = await get_drive_service(user.user_id)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Drive not connected")
+    
+    try:
+        results = service.files().list(
+            pageSize=50,
+            fields="files(id, name, mimeType, webViewLink, modifiedTime, size)",
+            q="mimeType='application/pdf' or mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
+        ).execute()
+        
+        return {"files": results.get('files', [])}
+    
+    except Exception as e:
+        logger.error(f"Failed to list Drive files: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch Google Drive files")
+
+# ========== GMAIL INTEGRATION ==========
+
+@api_router.get("/gmail/connect")
+async def connect_gmail(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    try:
+        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/gmail/callback"
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.getenv("GOOGLE_CLIENT_ID", ""),
+                    "client_secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [redirect_uri]
+                }
+            },
+            scopes=[
+                "https://www.googleapis.com/auth/gmail.readonly",
+                "openid",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "https://www.googleapis.com/auth/userinfo.profile"
+            ],
+            redirect_uri=redirect_uri
+        )
+        
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent',
+            state=user.user_id
+        )
+        
+        return {"authorization_url": authorization_url}
+    
+    except Exception as e:
+        logger.error(f"Failed to initiate Gmail OAuth: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to initiate Gmail connection")
+
+@api_router.get("/gmail/callback")
+async def gmail_callback(code: str = Query(...), state: str = Query(...)):
+    try:
+        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/gmail/callback"
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.getenv("GOOGLE_CLIENT_ID", ""),
+                    "client_secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [redirect_uri]
+                }
+            },
+            scopes=None,
+            redirect_uri=redirect_uri
+        )
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            flow.fetch_token(code=code)
+        
+        credentials = flow.credentials
+        
+        await db.gmail_credentials.update_one(
+            {"user_id": state},
+            {"$set": {
+                "user_id": state,
+                "access_token": credentials.token,
+                "refresh_token": credentials.refresh_token,
+                "token_uri": credentials.token_uri,
+                "client_id": credentials.client_id,
+                "client_secret": credentials.client_secret,
+                "scopes": credentials.scopes,
+                "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        
+        frontend_url = os.getenv("REACT_APP_BACKEND_URL", "").replace("/api", "")
+        return RedirectResponse(url=f"{frontend_url}/clients?gmail_connected=true")
+    
+    except Exception as e:
+        logger.error(f"Gmail callback failed: {str(e)}")
+        raise HTTPException(status_code=400, detail="Gmail connection failed")
+
+async def get_gmail_service(user_id: str):
+    creds_doc = await db.gmail_credentials.find_one({"user_id": user_id})
+    if not creds_doc:
+        return None
+    
+    expiry_str = creds_doc.get("expiry")
+    if expiry_str:
+        expiry = datetime.fromisoformat(expiry_str)
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+    else:
+        expiry = None
+    
+    creds = Credentials(
+        token=creds_doc["access_token"],
+        refresh_token=creds_doc.get("refresh_token"),
+        token_uri=creds_doc["token_uri"],
+        client_id=creds_doc["client_id"],
+        client_secret=creds_doc["client_secret"],
+        scopes=creds_doc["scopes"],
+        expiry=expiry
+    )
+    
+    if expiry and datetime.now(timezone.utc) >= expiry and creds.refresh_token:
+        creds.refresh(GoogleRequest())
+        await db.gmail_credentials.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "access_token": creds.token,
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return build('gmail', 'v1', credentials=creds)
+
+@api_router.post("/gmail/sync/{client_id}")
+async def sync_client_emails(client_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    client = await db.clients.find_one({"client_id": client_id}, {"_id": 0})
+    if not client or not client.get("email"):
+        raise HTTPException(status_code=404, detail="Client not found or no email")
+    
+    service = await get_gmail_service(user.user_id)
+    if not service:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    try:
+        # Search for emails from/to client
+        query = f"from:{client['email']} OR to:{client['email']}"
+        results = service.users().messages().list(userId='me', q=query, maxResults=50).execute()
+        messages = results.get('messages', [])
+        
+        synced_count = 0
+        for msg in messages:
+            msg_detail = service.users().messages().get(userId='me', id=msg['id'], format='full').execute()
+            
+            headers = {h['name']: h['value'] for h in msg_detail['payload'].get('headers', [])}
+            
+            email_data = {
+                "client_id": client_id,
+                "gmail_message_id": msg['id'],
+                "subject": headers.get('Subject', 'No Subject'),
+                "from": headers.get('From', ''),
+                "to": headers.get('To', ''),
+                "date": headers.get('Date', ''),
+                "snippet": msg_detail.get('snippet', ''),
+                "synced_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.client_emails.update_one(
+                {"gmail_message_id": msg['id']},
+                {"$set": email_data},
+                upsert=True
+            )
+            synced_count += 1
+        
+        return {"message": f"Synced {synced_count} emails for {client['name']}"}
+    
+    except Exception as e:
+        logger.error(f"Failed to sync emails: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to sync emails")
+
+@api_router.get("/clients/{client_id}/emails")
+async def get_client_emails(client_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    emails = await db.client_emails.find({"client_id": client_id}, {"_id": 0}).sort("date", -1).to_list(1000)
+    return {"emails": emails}
+
 # ========== FINANCE MODELS & ROUTES ==========
 
 class Invoice(BaseModel):
