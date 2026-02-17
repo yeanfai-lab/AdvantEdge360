@@ -1,24 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useSearchParams } from 'react-router-dom';
 import { API_URL } from '../lib/utils';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Plus, FileText, Check } from 'lucide-react';
+import { Plus, FileText, Check, HardDrive, Send, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ProposalsPage = () => {
+  const [searchParams] = useSearchParams();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [driveFiles, setDriveFiles] = useState([]);
+  const [selectedProposal, setSelectedProposal] = useState(null);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  
   const [formData, setFormData] = useState({
     title: '',
     client_name: '',
     description: '',
     amount: ''
   });
+
+  useEffect(() => {
+    if (searchParams.get('drive_connected') === 'true') {
+      toast.success('Google Drive connected successfully');
+    }
+  }, [searchParams]);
 
   const fetchProposals = async () => {
     try {
@@ -71,6 +85,75 @@ export const ProposalsPage = () => {
     }
   };
 
+  const handleConnectDrive = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/drive/connect`, { withCredentials: true });
+      window.location.href = response.data.authorization_url;
+    } catch (error) {
+      toast.error('Failed to connect Google Drive');
+    }
+  };
+
+  const handleOpenDrivePicker = async (proposal) => {
+    setSelectedProposal(proposal);
+    try {
+      const response = await axios.get(`${API_URL}/drive/files`, { withCredentials: true });
+      setDriveFiles(response.data.files);
+      setIsDriveDialogOpen(true);
+    } catch (error) {
+      if (error.response?.status === 400) {
+        toast.error('Please connect Google Drive first');
+        return;
+      }
+      toast.error('Failed to load Drive files');
+    }
+  };
+
+  const handleAttachDriveFile = async (file) => {
+    try {
+      await axios.patch(`${API_URL}/proposals/${selectedProposal.proposal_id}`, {
+        drive_file_id: file.id,
+        drive_file_name: file.name,
+        drive_file_link: file.webViewLink
+      }, { withCredentials: true });
+      toast.success('Document attached from Drive');
+      setIsDriveDialogOpen(false);
+      fetchProposals();
+    } catch (error) {
+      toast.error('Failed to attach document');
+    }
+  };
+
+  const handleSendForSignature = async () => {
+    if (!recipientEmail) {
+      toast.error('Please enter recipient email');
+      return;
+    }
+    
+    try {
+      const response = await axios.post(
+        `${API_URL}/proposals/${selectedProposal.proposal_id}/send-for-signature`,
+        null,
+        {
+          params: { recipient_email: recipientEmail },
+          withCredentials: true
+        }
+      );
+      
+      if (response.data.demo_mode) {
+        toast.success('Proposal sent for signature (Demo Mode)');
+      } else {
+        toast.success('Proposal sent for signature');
+      }
+      
+      setIsSendDialogOpen(false);
+      setRecipientEmail('');
+      fetchProposals();
+    } catch (error) {
+      toast.error('Failed to send proposal');
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       draft: 'bg-muted text-foreground',
@@ -92,68 +175,145 @@ export const ProposalsPage = () => {
           <h1 className="text-4xl font-heading font-bold tracking-tight mb-2">Proposals</h1>
           <p className="text-base text-muted-foreground">Create and manage client proposals</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="create-proposal-button">
-              <Plus className="mr-2 h-4 w-4" />
-              New Proposal
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Proposal</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Proposal Title</label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Enter proposal title"
-                  required
-                  data-testid="proposal-title-input"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Client Name</label>
-                <Input
-                  value={formData.client_name}
-                  onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                  placeholder="Client name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Description</label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Proposal description"
-                  required
-                  rows={4}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Amount</label>
-                <Input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" data-testid="submit-proposal-button">
-                  Create Proposal
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleConnectDrive}>
+            <HardDrive className="mr-2 h-4 w-4" />
+            Connect Drive
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="create-proposal-button">
+                <Plus className="mr-2 h-4 w-4" />
+                New Proposal
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Proposal</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Proposal Title</label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter proposal title"
+                    required
+                    data-testid="proposal-title-input"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Client Name</label>
+                  <Input
+                    value={formData.client_name}
+                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                    placeholder="Client name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Description</label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Proposal description"
+                    required
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Amount</label>
+                  <Input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" data-testid="submit-proposal-button">
+                    Create Proposal
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Google Drive File Picker Dialog */}
+      <Dialog open={isDriveDialogOpen} onOpenChange={setIsDriveDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Attach Document from Google Drive</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {driveFiles.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No documents found in Drive</p>
+            ) : (
+              driveFiles.map((file) => (
+                <Card
+                  key={file.id}
+                  className="p-4 hover:bg-muted cursor-pointer transition-colors"
+                  onClick={() => handleAttachDriveFile(file)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      Select
+                    </Button>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send for Signature Dialog */}
+      <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send for Signature</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Recipient Email</label>
+              <Input
+                type="email"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                placeholder="client@example.com"
+                required
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The proposal will be sent to this email address for electronic signature.
+              {!process.env.REACT_APP_ZOHO_ENABLED && ' (Demo Mode - No actual signature required)'}
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsSendDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSendForSignature}>
+                <Send className="mr-2 h-4 w-4" />
+                Send
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {proposals.length === 0 ? (
         <Card className="p-12 text-center">
@@ -175,34 +335,73 @@ export const ProposalsPage = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{proposal.description}</p>
+              
+              {proposal.drive_file_name && (
+                <div className="mb-4 p-2 bg-muted rounded flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs truncate">{proposal.drive_file_name}</span>
+                  {proposal.drive_file_link && (
+                    <a href={proposal.drive_file_link} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    </a>
+                  )}
+                </div>
+              )}
+              
               {proposal.amount && (
                 <div className="mb-4 pb-4 border-b">
                   <p className="text-sm text-muted-foreground">Proposed Amount</p>
                   <p className="text-lg font-mono font-semibold">${proposal.amount.toLocaleString()}</p>
                 </div>
               )}
-              <div className="flex gap-2">
+              
+              <div className="flex gap-2 flex-wrap">
                 {proposal.status === 'draft' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => handleApprove(proposal.proposal_id)}
-                    data-testid={`approve-proposal-${proposal.proposal_id}`}
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    Approve
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleOpenDrivePicker(proposal)}
+                    >
+                      <HardDrive className="mr-2 h-4 w-4" />
+                      Attach Doc
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleApprove(proposal.proposal_id)}
+                      data-testid={`approve-proposal-${proposal.proposal_id}`}
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Approve
+                    </Button>
+                  </>
                 )}
                 {proposal.status === 'approved' && (
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleConvert(proposal.proposal_id)}
-                    data-testid={`convert-proposal-${proposal.proposal_id}`}
-                  >
-                    Convert to Project
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setSelectedProposal(proposal);
+                        setIsSendDialogOpen(true);
+                      }}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Send for Signature
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleConvert(proposal.proposal_id)}
+                      data-testid={`convert-proposal-${proposal.proposal_id}`}
+                    >
+                      Convert to Project
+                    </Button>
+                  </>
                 )}
               </div>
             </Card>
