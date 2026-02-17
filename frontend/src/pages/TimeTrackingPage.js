@@ -276,14 +276,14 @@ export const TimeTrackingPage = () => {
             {timeLogs.map((log) => {
               const task = tasks.find(t => t.task_id === log.task_id);
               return (
-                <div key={log.log_id} className="flex items-center justify-between p-3 rounded-md bg-muted" data-testid={`timelog-${log.log_id}`}>
-                  <div className="flex-1">
+                <div key={log.log_id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-md bg-muted gap-3" data-testid={`timelog-${log.log_id}`}>
+                  <div className="flex-1 w-full sm:w-auto">
                     <p className="font-medium">{task?.title || 'Unknown Task'}</p>
                     {log.description && (
                       <p className="text-sm text-muted-foreground">{log.description}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                     <span className="text-sm text-muted-foreground">{new Date(log.date).toLocaleDateString()}</span>
                     <span className="font-mono font-semibold">{(log.duration_minutes / 60).toFixed(2)}h</span>
                     {log.billable && (
