@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../lib/utils';
 import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, TrendingUp, Users, Clock } from 'lucide-react';
+import { FileText, TrendingUp, Users, Clock, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ReportsPage = () => {
@@ -34,6 +35,27 @@ export const ReportsPage = () => {
   }, []);
 
   const COLORS = ['hsl(180, 84%, 45%)', 'hsl(160, 75%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(140, 65%, 45%)'];
+
+  const handleExport = async (endpoint, filename) => {
+    try {
+      const response = await axios.get(`${API_URL}/reports/export/${endpoint}`, {
+        withCredentials: true,
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success('Report exported successfully');
+    } catch (error) {
+      toast.error('Failed to export report');
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
@@ -155,6 +177,12 @@ export const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="projects" className="space-y-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => handleExport('projects', 'projects_export.csv')}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
           <Card className="p-6">
             <h3 className="text-xl font-heading font-semibold mb-6">Project Performance Metrics</h3>
             {projectPerformance.length > 0 ? (
@@ -202,6 +230,12 @@ export const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="team" className="space-y-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => handleExport('team-productivity', 'team_productivity_export.csv')}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
           <Card className="p-6">
             <h3 className="text-xl font-heading font-semibold mb-6">Team Productivity Overview</h3>
             {teamProductivity.length > 0 ? (
