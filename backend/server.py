@@ -512,16 +512,39 @@ async def update_team_member(user_id: str, updates: dict, session_token: Optiona
 
 # ========== CLIENT MANAGEMENT MODELS & ROUTES ==========
 
+class Company(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    company_id: str
+    name: str
+    industry: Optional[str] = None
+    website: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    custom_fields: dict = {}
+    status: str = "active"
+    created_by: str
+    created_at: datetime
+
+class CompanyCreate(BaseModel):
+    name: str
+    industry: Optional[str] = None
+    website: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    custom_fields: dict = {}
+
 class Client(BaseModel):
     model_config = ConfigDict(extra="ignore")
     client_id: str
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
-    company: Optional[str] = None
+    position: Optional[str] = None
+    company_id: Optional[str] = None
+    company_name: Optional[str] = None
     address: Optional[str] = None
     status: str = "active"
-    contact_persons: List[dict] = []
+    custom_fields: dict = {}
     notes: Optional[str] = None
     created_by: str
     created_at: datetime
@@ -530,9 +553,78 @@ class ClientCreate(BaseModel):
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
-    company: Optional[str] = None
+    position: Optional[str] = None
+    company_id: Optional[str] = None
     address: Optional[str] = None
+    custom_fields: dict = {}
     notes: Optional[str] = None
+
+# ========== COMPANY ROUTES ==========
+
+@api_router.post("/companies", response_model=Company)
+async def create_company(payload: CompanyCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    company_id = f"company_{uuid.uuid4().hex[:12]}"
+    company_doc = {
+        "company_id": company_id,
+        "name": payload.name,
+        "industry": payload.industry,
+        "website": payload.website,
+        "address": payload.address,
+        "phone": payload.phone,
+        "custom_fields": payload.custom_fields,
+        "status": "active",
+        "created_by": user.user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.companies.insert_one(company_doc)
+    company_doc['created_at'] = datetime.fromisoformat(company_doc['created_at'])
+    return Company(**company_doc)
+
+@api_router.get("/companies", response_model=List[Company])
+async def get_companies(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    companies = await db.companies.find({}, {"_id": 0}).to_list(1000)
+    for company in companies:
+        if isinstance(company['created_at'], str):
+            company['created_at'] = datetime.fromisoformat(company['created_at'])
+    return companies
+
+@api_router.get("/companies/{company_id}", response_model=Company)
+async def get_company(company_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    company = await db.companies.find_one({"company_id": company_id}, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    if isinstance(company['created_at'], str):
+        company['created_at'] = datetime.fromisoformat(company['created_at'])
+    return Company(**company)
+
+@api_router.patch("/companies/{company_id}")
+async def update_company(company_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.companies.update_one({"company_id": company_id}, {"$set": updates})
+    return {"message": "Company updated"}
+
+@api_router.delete("/companies/{company_id}")
+async def delete_company(company_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Check if company has clients
+    clients = await db.clients.count_documents({"company_id": company_id})
+    if clients > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete company with existing contacts")
+    
+    await db.companies.delete_one({"company_id": company_id})
+    return {"message": "Company deleted"}
+
+# ========== CLIENT ROUTES ==========
 
 @api_router.post("/clients", response_model=Client)
 async def create_client(payload: ClientCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
