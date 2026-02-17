@@ -84,6 +84,9 @@ class Proposal(BaseModel):
     created_by: str
     approved_by: Optional[List[str]] = []
     project_id: Optional[str] = None
+    drive_file_id: Optional[str] = None
+    drive_file_name: Optional[str] = None
+    drive_file_link: Optional[str] = None
     created_at: datetime
 
 class ProposalCreate(BaseModel):
