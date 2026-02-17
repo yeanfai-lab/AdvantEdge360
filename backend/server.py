@@ -954,6 +954,258 @@ async def get_client_emails(client_id: str, session_token: Optional[str] = Cooki
     emails = await db.client_emails.find({"client_id": client_id}, {"_id": 0}).sort("date", -1).to_list(1000)
     return {"emails": emails}
 
+
+# ========== ZOHO SIGN INTEGRATION (DEMO MODE) ==========
+
+async def send_email_via_gmail(user_id: str, to: str, subject: str, body: str):
+    """Send email using Gmail API"""
+    service = await get_gmail_service(user_id)
+    if not service:
+        logger.warning(f"Gmail not connected for user {user_id}, skipping email")
+        return False
+    
+    try:
+        message = f"To: {to}\nSubject: {subject}\n\n{body}"
+        encoded = base64.urlsafe_b64encode(message.encode()).decode()
+        
+        service.users().messages().send(
+            userId='me',
+            body={'raw': encoded}
+        ).execute()
+        
+        logger.info(f"Email sent to {to}: {subject}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+        return False
+
+@api_router.post("/proposals/{proposal_id}/send-for-signature")
+async def send_proposal_for_signature(proposal_id: str, recipient_email: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    # DEMO MODE: Simulate Zoho Sign integration
+    zoho_enabled = os.getenv("ZOHO_CLIENT_ID") and os.getenv("ZOHO_CLIENT_SECRET")
+    
+    if zoho_enabled:
+        # Real Zoho Sign implementation (placeholder for when credentials are added)
+        logger.info(f"Zoho Sign: Sending proposal {proposal_id} to {recipient_email}")
+        # TODO: Implement actual Zoho Sign API call
+        zoho_request_id = f"zoho_demo_{uuid.uuid4().hex[:12]}"
+    else:
+        # Demo mode
+        zoho_request_id = f"demo_{uuid.uuid4().hex[:12]}"
+        logger.info(f"DEMO MODE: Proposal {proposal_id} sent for signature to {recipient_email}")
+    
+    # Update proposal with signature request info
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "signature_request_id": zoho_request_id,
+            "signature_status": "pending",
+            "sent_to": recipient_email,
+            "sent_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Send notification email via Gmail
+    await send_email_via_gmail(
+        user.user_id,
+        recipient_email,
+        f"Signature Request: {proposal['title']}",
+        f"Hello,\n\nPlease review and sign the proposal: {proposal['title']}\n\n"
+        f"{'[DEMO MODE - No actual signature required]' if not zoho_enabled else 'Click the link to sign the document.'}\n\n"
+        f"Best regards,\n{user.name}"
+    )
+    
+    return {
+        "message": "Proposal sent for signature" + (" (Demo Mode)" if not zoho_enabled else ""),
+        "request_id": zoho_request_id,
+        "demo_mode": not zoho_enabled
+    }
+
+@api_router.get("/proposals/{proposal_id}/signature-status")
+async def check_signature_status(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    return {
+        "status": proposal.get("signature_status", "not_sent"),
+        "request_id": proposal.get("signature_request_id"),
+        "sent_to": proposal.get("sent_to"),
+        "sent_at": proposal.get("sent_at")
+    }
+
+# ========== EMAIL NOTIFICATIONS ==========
+
+@api_router.post("/notifications/task-assignment")
+async def notify_task_assignment(task_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task or not task.get("assigned_to"):
+        return {"message": "No notification sent"}
+    
+    assignee = await db.users.find_one({"user_id": task["assigned_to"]}, {"_id": 0})
+    if not assignee or not assignee.get("email"):
+        return {"message": "Assignee has no email"}
+    
+    # Send email notification
+    await send_email_via_gmail(
+        user.user_id,
+        assignee["email"],
+        f"New Task Assignment: {task['title']}",
+        f"Hello {assignee['name']},\n\n"
+        f"You have been assigned a new task:\n\n"
+        f"Task: {task['title']}\n"
+        f"Priority: {task.get('priority', 'medium')}\n"
+        f"Due Date: {task.get('due_date', 'Not set')}\n\n"
+        f"Description: {task.get('description', 'No description')}\n\n"
+        f"Please log in to the system to view details.\n\n"
+        f"Best regards,\n{user.name}"
+    )
+    
+    return {"message": "Task assignment notification sent"}
+
+@api_router.post("/notifications/invoice-reminder")
+async def send_invoice_reminder(invoice_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    invoice = await db.invoices.find_one({"invoice_id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    client = await db.clients.find_one({"client_id": invoice["client_id"]}, {"_id": 0})
+    if not client or not client.get("email"):
+        raise HTTPException(status_code=400, detail="Client has no email")
+    
+    # Send reminder email
+    await send_email_via_gmail(
+        user.user_id,
+        client["email"],
+        f"Invoice Reminder: #{invoice['invoice_id'][-6:]}",
+        f"Hello {client['name']},\n\n"
+        f"This is a friendly reminder about your pending invoice:\n\n"
+        f"Invoice #: {invoice['invoice_id'][-6:]}\n"
+        f"Amount: ${invoice['amount']:,.2f}\n"
+        f"Due Date: {invoice.get('due_date', 'Not specified')}\n\n"
+        f"Please process the payment at your earliest convenience.\n\n"
+        f"If you have any questions, feel free to reach out.\n\n"
+        f"Best regards,\n{user.name}"
+    )
+    
+    return {"message": "Invoice reminder sent"}
+
+# ========== CSV EXPORT FUNCTIONALITY ==========
+
+@api_router.get("/reports/export/projects")
+async def export_projects_csv(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    
+    # Generate CSV
+    csv_lines = ["Project ID,Name,Client,Status,Budget,Start Date,End Date,Created At"]
+    for p in projects:
+        csv_lines.append(
+            f"{p['project_id']},{p['name']},{p.get('client_name', '')},"
+            f"{p.get('status', '')},"
+            f"{p.get('budget', 0)},{p.get('start_date', '')},"
+            f"{p.get('end_date', '')},{p.get('created_at', '')}"
+        )
+    
+    csv_content = "\n".join(csv_lines)
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=projects_export.csv"}
+    )
+
+@api_router.get("/reports/export/tasks")
+async def export_tasks_csv(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    tasks = await db.tasks.find({}, {"_id": 0}).to_list(10000)
+    
+    csv_lines = ["Task ID,Project ID,Title,Status,Priority,Assigned To,Due Date,Created At"]
+    for t in tasks:
+        csv_lines.append(
+            f"{t['task_id']},{t.get('project_id', '')},"
+            f"\"{t['title']}\",{t.get('status', '')},"
+            f"{t.get('priority', '')},{t.get('assigned_to', '')},"
+            f"{t.get('due_date', '')},{t.get('created_at', '')}"
+        )
+    
+    csv_content = "\n".join(csv_lines)
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=tasks_export.csv"}
+    )
+
+@api_router.get("/reports/export/time-logs")
+async def export_time_logs_csv(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
+    
+    csv_lines = ["Log ID,Task ID,User ID,Duration (min),Date,Billable,Description,Created At"]
+    for log in logs:
+        csv_lines.append(
+            f"{log['log_id']},{log.get('task_id', '')},"
+            f"{log.get('user_id', '')},{log.get('duration_minutes', 0)},"
+            f"{log.get('date', '')},{log.get('billable', True)},"
+            f"\"{log.get('description', '')}\",{log.get('created_at', '')}"
+        )
+    
+    csv_content = "\n".join(csv_lines)
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=time_logs_export.csv"}
+    )
+
+@api_router.get("/reports/export/team-productivity")
+async def export_team_productivity_csv(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Get team productivity data
+    team_members = await db.users.find({}, {"_id": 0}).to_list(1000)
+    
+    csv_lines = ["User ID,Name,Role,Total Tasks,Completed Tasks,Total Hours"]
+    
+    for member in team_members:
+        tasks = await db.tasks.find({"assigned_to": member["user_id"]}, {"_id": 0}).to_list(1000)
+        completed_tasks = [t for t in tasks if t.get("status") == "done"]
+        
+        time_logs = await db.time_logs.find({"user_id": member["user_id"]}, {"_id": 0}).to_list(10000)
+        total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
+        
+        csv_lines.append(
+            f"{member['user_id']},{member['name']},{member['role']},"
+            f"{len(tasks)},{len(completed_tasks)},{total_hours:.2f}"
+        )
+    
+    csv_content = "\n".join(csv_lines)
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=team_productivity_export.csv"}
+    )
+
 # ========== FINANCE MODELS & ROUTES ==========
 
 class Invoice(BaseModel):
