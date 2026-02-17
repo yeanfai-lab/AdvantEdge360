@@ -499,6 +499,316 @@ async def update_team_member(user_id: str, updates: dict, session_token: Optiona
     await db.users.update_one({"user_id": user_id}, {"$set": updates})
     return {"message": "Team member updated"}
 
+
+# ========== CLIENT MANAGEMENT MODELS & ROUTES ==========
+
+class Client(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    client_id: str
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    address: Optional[str] = None
+    status: str = "active"
+    contact_persons: List[dict] = []
+    notes: Optional[str] = None
+    created_by: str
+    created_at: datetime
+
+class ClientCreate(BaseModel):
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+@api_router.post("/clients", response_model=Client)
+async def create_client(payload: ClientCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    client_id = f"client_{uuid.uuid4().hex[:12]}"
+    client_doc = {
+        "client_id": client_id,
+        "name": payload.name,
+        "email": payload.email,
+        "phone": payload.phone,
+        "company": payload.company,
+        "address": payload.address,
+        "status": "active",
+        "contact_persons": [],
+        "notes": payload.notes,
+        "created_by": user.user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.clients.insert_one(client_doc)
+    client_doc['created_at'] = datetime.fromisoformat(client_doc['created_at'])
+    return Client(**client_doc)
+
+@api_router.get("/clients", response_model=List[Client])
+async def get_clients(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    clients = await db.clients.find({}, {"_id": 0}).to_list(1000)
+    for client in clients:
+        if isinstance(client['created_at'], str):
+            client['created_at'] = datetime.fromisoformat(client['created_at'])
+    return clients
+
+@api_router.get("/clients/{client_id}", response_model=Client)
+async def get_client(client_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    client = await db.clients.find_one({"client_id": client_id}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    if isinstance(client['created_at'], str):
+        client['created_at'] = datetime.fromisoformat(client['created_at'])
+    return Client(**client)
+
+@api_router.patch("/clients/{client_id}")
+async def update_client(client_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.clients.update_one({"client_id": client_id}, {"$set": updates})
+    return {"message": "Client updated"}
+
+# ========== FINANCE MODELS & ROUTES ==========
+
+class Invoice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    invoice_id: str
+    client_id: str
+    project_id: Optional[str] = None
+    amount: float
+    status: str = "pending"
+    due_date: Optional[str] = None
+    paid_date: Optional[str] = None
+    items: List[dict] = []
+    created_by: str
+    created_at: datetime
+
+class InvoiceCreate(BaseModel):
+    client_id: str
+    project_id: Optional[str] = None
+    amount: float
+    due_date: Optional[str] = None
+    items: List[dict] = []
+
+class Expense(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    expense_id: str
+    project_id: Optional[str] = None
+    category: str
+    amount: float
+    description: Optional[str] = None
+    date: str
+    created_by: str
+    created_at: datetime
+
+class ExpenseCreate(BaseModel):
+    project_id: Optional[str] = None
+    category: str
+    amount: float
+    description: Optional[str] = None
+    date: str
+
+@api_router.post("/invoices", response_model=Invoice)
+async def create_invoice(payload: InvoiceCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create invoices")
+    
+    invoice_id = f"inv_{uuid.uuid4().hex[:12]}"
+    invoice_doc = {
+        "invoice_id": invoice_id,
+        "client_id": payload.client_id,
+        "project_id": payload.project_id,
+        "amount": payload.amount,
+        "status": "pending",
+        "due_date": payload.due_date,
+        "paid_date": None,
+        "items": payload.items,
+        "created_by": user.user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.invoices.insert_one(invoice_doc)
+    invoice_doc['created_at'] = datetime.fromisoformat(invoice_doc['created_at'])
+    return Invoice(**invoice_doc)
+
+@api_router.get("/invoices", response_model=List[Invoice])
+async def get_invoices(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view invoices")
+    
+    invoices = await db.invoices.find({}, {"_id": 0}).to_list(1000)
+    for invoice in invoices:
+        if isinstance(invoice['created_at'], str):
+            invoice['created_at'] = datetime.fromisoformat(invoice['created_at'])
+    return invoices
+
+@api_router.patch("/invoices/{invoice_id}")
+async def update_invoice(invoice_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.invoices.update_one({"invoice_id": invoice_id}, {"$set": updates})
+    return {"message": "Invoice updated"}
+
+@api_router.post("/expenses", response_model=Expense)
+async def create_expense(payload: ExpenseCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create expenses")
+    
+    expense_id = f"exp_{uuid.uuid4().hex[:12]}"
+    expense_doc = {
+        "expense_id": expense_id,
+        "project_id": payload.project_id,
+        "category": payload.category,
+        "amount": payload.amount,
+        "description": payload.description,
+        "date": payload.date,
+        "created_by": user.user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.expenses.insert_one(expense_doc)
+    expense_doc['created_at'] = datetime.fromisoformat(expense_doc['created_at'])
+    return Expense(**expense_doc)
+
+@api_router.get("/expenses", response_model=List[Expense])
+async def get_expenses(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view expenses")
+    
+    expenses = await db.expenses.find({}, {"_id": 0}).to_list(1000)
+    for expense in expenses:
+        if isinstance(expense['created_at'], str):
+            expense['created_at'] = datetime.fromisoformat(expense['created_at'])
+    return expenses
+
+# ========== REPORTS & ANALYTICS ROUTES ==========
+
+@api_router.get("/reports/overview")
+async def get_overview_report(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    projects_count = await db.projects.count_documents({})
+    active_projects = await db.projects.count_documents({"status": "active"})
+    tasks_count = await db.tasks.count_documents({})
+    completed_tasks = await db.tasks.count_documents({"status": "done"})
+    team_count = await db.users.count_documents({})
+    
+    time_logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
+    total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
+    billable_hours = sum(log.get("duration_minutes", 0) for log in time_logs if log.get("billable")) / 60
+    
+    finance_data = {}
+    if user.role in ["admin", "manager", "finance"]:
+        invoices = await db.invoices.find({}, {"_id": 0}).to_list(1000)
+        expenses = await db.expenses.find({}, {"_id": 0}).to_list(1000)
+        
+        total_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "paid")
+        pending_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "pending")
+        total_expenses = sum(exp.get("amount", 0) for exp in expenses)
+        
+        finance_data = {
+            "total_revenue": total_revenue,
+            "pending_revenue": pending_revenue,
+            "total_expenses": total_expenses,
+            "profit": total_revenue - total_expenses
+        }
+    
+    return {
+        "projects": {
+            "total": projects_count,
+            "active": active_projects
+        },
+        "tasks": {
+            "total": tasks_count,
+            "completed": completed_tasks,
+            "completion_rate": (completed_tasks / tasks_count * 100) if tasks_count > 0 else 0
+        },
+        "team": {
+            "total": team_count
+        },
+        "time": {
+            "total_hours": round(total_hours, 2),
+            "billable_hours": round(billable_hours, 2),
+            "non_billable_hours": round(total_hours - billable_hours, 2)
+        },
+        "finance": finance_data
+    }
+
+@api_router.get("/reports/project-performance")
+async def get_project_performance(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    performance_data = []
+    
+    for project in projects:
+        tasks = await db.tasks.find({"project_id": project["project_id"]}, {"_id": 0}).to_list(1000)
+        completed_tasks = [t for t in tasks if t.get("status") == "done"]
+        
+        time_logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
+        project_time = sum(
+            log.get("duration_minutes", 0) 
+            for log in time_logs 
+            if log.get("task_id") in [t.get("task_id") for t in tasks]
+        ) / 60
+        
+        performance_data.append({
+            "project_id": project["project_id"],
+            "project_name": project["name"],
+            "total_tasks": len(tasks),
+            "completed_tasks": len(completed_tasks),
+            "completion_rate": (len(completed_tasks) / len(tasks) * 100) if tasks else 0,
+            "total_hours": round(project_time, 2),
+            "budget": project.get("budget", 0),
+            "status": project.get("status")
+        })
+    
+    return performance_data
+
+@api_router.get("/reports/team-productivity")
+async def get_team_productivity(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    team_members = await db.users.find({}, {"_id": 0}).to_list(1000)
+    productivity_data = []
+    
+    for member in team_members:
+        tasks = await db.tasks.find({"assigned_to": member["user_id"]}, {"_id": 0}).to_list(1000)
+        completed_tasks = [t for t in tasks if t.get("status") == "done"]
+        
+        time_logs = await db.time_logs.find({"user_id": member["user_id"]}, {"_id": 0}).to_list(10000)
+        total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
+        
+        productivity_data.append({
+            "user_id": member["user_id"],
+            "name": member["name"],
+            "role": member["role"],
+            "total_tasks": len(tasks),
+            "completed_tasks": len(completed_tasks),
+            "total_hours": round(total_hours, 2)
+        })
+    
+    return productivity_data
+
 app.include_router(api_router)
 
 app.add_middleware(
