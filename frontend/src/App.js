@@ -12,6 +12,9 @@ import { ProposalsPage } from './pages/ProposalsPage';
 import { TasksPage } from './pages/TasksPage';
 import { TeamPage } from './pages/TeamPage';
 import { TimeTrackingPage } from './pages/TimeTrackingPage';
+import { ClientsPage } from './pages/ClientsPage';
+import { FinancePage } from './pages/FinancePage';
+import { ReportsPage } from './pages/ReportsPage';
 import './App.css';
 
 function AppRouter() {
@@ -81,6 +84,36 @@ function AppRouter() {
           <ProtectedRoute>
             <AppLayout>
               <TimeTrackingPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ClientsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/finance"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <FinancePage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ReportsPage />
             </AppLayout>
           </ProtectedRoute>
         }
