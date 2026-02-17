@@ -688,6 +688,24 @@ async def update_client(client_id: str, updates: dict, session_token: Optional[s
     await db.clients.update_one({"client_id": client_id}, {"$set": updates})
     return {"message": "Client updated"}
 
+@api_router.delete("/clients/{client_id}")
+async def delete_client(client_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.clients.delete_one({"client_id": client_id})
+    return {"message": "Client deleted"}
+
+@api_router.get("/clients/by-company/{company_id}")
+async def get_clients_by_company(company_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    clients = await db.clients.find({"company_id": company_id}, {"_id": 0}).to_list(1000)
+    for client in clients:
+        if isinstance(client['created_at'], str):
+            client['created_at'] = datetime.fromisoformat(client['created_at'])
+    return clients
+
+
 
 # ========== CLIENT COMPREHENSIVE VIEW ==========
 
