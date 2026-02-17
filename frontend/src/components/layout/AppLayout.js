@@ -9,6 +9,9 @@ import {
   CheckSquare,
   Users,
   Clock,
+  Building2,
+  DollarSign,
+  BarChart3,
   LogOut,
   Menu,
   X
@@ -23,6 +26,9 @@ const navigation = [
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
+  { name: 'Clients', href: '/clients', icon: Building2 },
+  { name: 'Finance', href: '/finance', icon: DollarSign },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
 export const AppLayout = ({ children }) => {
