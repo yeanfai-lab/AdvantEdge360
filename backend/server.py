@@ -631,15 +631,25 @@ async def create_client(payload: ClientCreate, session_token: Optional[str] = Co
     user = await get_user_from_token(session_token, authorization)
     
     client_id = f"client_{uuid.uuid4().hex[:12]}"
+    
+    # Get company name if company_id provided
+    company_name = None
+    if payload.company_id:
+        company = await db.companies.find_one({"company_id": payload.company_id}, {"_id": 0})
+        if company:
+            company_name = company["name"]
+    
     client_doc = {
         "client_id": client_id,
         "name": payload.name,
         "email": payload.email,
         "phone": payload.phone,
-        "company": payload.company,
+        "position": payload.position,
+        "company_id": payload.company_id,
+        "company_name": company_name,
         "address": payload.address,
         "status": "active",
-        "contact_persons": [],
+        "custom_fields": payload.custom_fields,
         "notes": payload.notes,
         "created_by": user.user_id,
         "created_at": datetime.now(timezone.utc).isoformat()
