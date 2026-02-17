@@ -208,26 +208,26 @@ export const TimeTrackingPage = () => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6">
-          <p className="text-sm text-muted-foreground mb-1">Total Hours</p>
-          <p className="text-3xl font-heading font-bold">{totalHours.toFixed(2)}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Hours</p>
+          <p className="text-2xl sm:text-3xl font-heading font-bold">{totalHours.toFixed(2)}</p>
         </Card>
-        <Card className="p-6">
-          <p className="text-sm text-muted-foreground mb-1">Billable Hours</p>
-          <p className="text-3xl font-heading font-bold text-chart-4">{billableHours.toFixed(2)}</p>
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-1">Billable Hours</p>
+          <p className="text-2xl sm:text-3xl font-heading font-bold text-chart-4">{billableHours.toFixed(2)}</p>
         </Card>
-        <Card className="p-6">
-          <p className="text-sm text-muted-foreground mb-1">Non-Billable Hours</p>
-          <p className="text-3xl font-heading font-bold text-muted-foreground">{(totalHours - billableHours).toFixed(2)}</p>
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-1">Non-Billable Hours</p>
+          <p className="text-2xl sm:text-3xl font-heading font-bold text-muted-foreground">{(totalHours - billableHours).toFixed(2)}</p>
         </Card>
       </div>
 
-      <Card className="p-6 mb-8">
-        <h3 className="text-xl font-heading font-semibold mb-4">Timer</h3>
-        <div className="flex items-center gap-4">
+      <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+        <h3 className="text-lg sm:text-xl font-heading font-semibold mb-4">Timer</h3>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <Select value={selectedTask} onValueChange={setSelectedTask} disabled={isTimerRunning}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Select task" />
             </SelectTrigger>
             <SelectContent>
@@ -242,19 +242,20 @@ export const TimeTrackingPage = () => {
               )}
             </SelectContent>
           </Select>
-          <div className="text-3xl font-mono font-bold">{formatTime(timerSeconds)}</div>
-          <div className="flex gap-2">
+          <div className="text-2xl sm:text-3xl font-mono font-bold text-center sm:text-left">{formatTime(timerSeconds)}</div>
+          <div className="flex gap-2 w-full sm:w-auto">
             {!isTimerRunning ? (
               <Button
                 onClick={() => setIsTimerRunning(true)}
                 disabled={!selectedTask}
                 data-testid="start-timer-button"
+                className="flex-1 sm:flex-none"
               >
                 <Play className="mr-2 h-4 w-4" />
                 Start
               </Button>
             ) : (
-              <Button onClick={handleStopTimer} variant="destructive" data-testid="stop-timer-button">
+              <Button onClick={handleStopTimer} variant="destructive" data-testid="stop-timer-button" className="flex-1 sm:flex-none">
                 <Pause className="mr-2 h-4 w-4" />
                 Stop & Save
               </Button>
@@ -263,8 +264,8 @@ export const TimeTrackingPage = () => {
         </div>
       </Card>
 
-      <Card className="p-6">
-        <h3 className="text-xl font-heading font-semibold mb-4">Time Logs</h3>
+      <Card className="p-4 sm:p-6">
+        <h3 className="text-lg sm:text-xl font-heading font-semibold mb-4">Time Logs</h3>
         {timeLogs.length === 0 ? (
           <div className="text-center py-8">
             <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
