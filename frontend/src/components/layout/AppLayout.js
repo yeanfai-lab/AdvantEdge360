@@ -21,12 +21,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
-  { name: 'Proposals', href: '/proposals', icon: FileText },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Team', href: '/team', icon: Users },
-  { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
   { name: 'Clients', href: '/clients', icon: Building2 },
+  { name: 'Proposals', href: '/proposals', icon: FileText },
+  { name: 'Projects', href: '/projects', icon: FolderKanban },
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
+  { name: 'Team', href: '/team', icon: Users },
   { name: 'Finance', href: '/finance', icon: DollarSign },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
