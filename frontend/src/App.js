@@ -13,6 +13,7 @@ import { TasksPage } from './pages/TasksPage';
 import { TeamPage } from './pages/TeamPage';
 import { TimeTrackingPage } from './pages/TimeTrackingPage';
 import { ClientsPage } from './pages/ClientsPage';
+import { ClientDetailPage } from './pages/ClientDetailPage';
 import { FinancePage } from './pages/FinancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import './App.css';
@@ -94,6 +95,16 @@ function AppRouter() {
           <ProtectedRoute>
             <AppLayout>
               <ClientsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients/:clientId"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ClientDetailPage />
             </AppLayout>
           </ProtectedRoute>
         }
