@@ -381,7 +381,7 @@ export const ProposalDetailPage = () => {
                   <SelectValue placeholder="Choose approver" />
                 </SelectTrigger>
                 <SelectContent>
-                  {teamMembers.filter(m => m.role in ['admin', 'manager']).map((member) => (
+                  {teamMembers.filter(m => ['admin', 'manager'].includes(m.role)).map((member) => (
                     <SelectItem key={member.user_id} value={member.user_id}>
                       {member.name} ({member.role})
                     </SelectItem>
