@@ -373,14 +373,22 @@ export const ProposalsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {proposals.map((proposal) => (
-            <Card key={proposal.proposal_id} className="p-6 hover:shadow-md transition-shadow" data-testid={`proposal-card-${proposal.proposal_id}`}>
+            <Card 
+              key={proposal.proposal_id} 
+              className="p-6 hover:shadow-md transition-shadow cursor-pointer" 
+              data-testid={`proposal-card-${proposal.proposal_id}`}
+              onClick={() => navigate(`/proposals/${proposal.proposal_id}`)}
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-heading font-semibold mb-2">{proposal.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">Client: {proposal.client_name}</p>
+                  <p className="text-sm text-muted-foreground mb-1">Client: {proposal.client_name}</p>
+                  {proposal.category && (
+                    <p className="text-xs text-muted-foreground">{proposal.category}</p>
+                  )}
                 </div>
                 <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(proposal.status)}`}>
-                  {proposal.status}
+                  {proposal.status.replace('_', ' ')}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{proposal.description}</p>
@@ -390,7 +398,7 @@ export const ProposalsPage = () => {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs truncate">{proposal.drive_file_name}</span>
                   {proposal.drive_file_link && (
-                    <a href={proposal.drive_file_link} target="_blank" rel="noopener noreferrer">
+                    <a href={proposal.drive_file_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                       <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                     </a>
                   )}
@@ -404,54 +412,53 @@ export const ProposalsPage = () => {
                 </div>
               )}
               
-              <div className="flex gap-2 flex-wrap">
-                {proposal.status === 'draft' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleOpenDrivePicker(proposal)}
-                    >
-                      <HardDrive className="mr-2 h-4 w-4" />
-                      Attach Doc
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleApprove(proposal.proposal_id)}
-                      data-testid={`approve-proposal-${proposal.proposal_id}`}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Approve
-                    </Button>
-                  </>
-                )}
-                {proposal.status === 'approved' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setSelectedProposal(proposal);
-                        setIsSendDialogOpen(true);
-                      }}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Send for Signature
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleConvert(proposal.proposal_id)}
-                      data-testid={`convert-proposal-${proposal.proposal_id}`}
-                    >
-                      Convert to Project
-                    </Button>
-                  </>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                  {proposal.status === 'draft' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenDrivePicker(proposal)}
+                      >
+                        <HardDrive className="mr-1 h-3 w-3" />
+                        Attach
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleApprove(proposal.proposal_id)}
+                        data-testid={`approve-proposal-${proposal.proposal_id}`}
+                      >
+                        <Check className="mr-1 h-3 w-3" />
+                        Approve
+                      </Button>
+                    </>
+                  )}
+                  {proposal.status === 'approved' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedProposal(proposal);
+                          setIsSendDialogOpen(true);
+                        }}
+                      >
+                        <Send className="mr-1 h-3 w-3" />
+                        Sign
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleConvert(proposal.proposal_id)}
+                        data-testid={`convert-proposal-${proposal.proposal_id}`}
+                      >
+                        Convert
+                      </Button>
+                    </>
+                  )}
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </Card>
           ))}
