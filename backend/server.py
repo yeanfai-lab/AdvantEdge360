@@ -389,7 +389,49 @@ async def approve_proposal(proposal_id: str, session_token: Optional[str] = Cook
     
     return {"message": "Proposal approved"}
 
-@api_router.post("/proposals/{proposal_id}/convert")
+@api_router.post("/proposals/{proposal_id}/convert", response_model=Project)
+async def convert_to_project(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    if proposal["status"] not in ["approved", "signed"]:
+        raise HTTPException(status_code=400, detail="Proposal must be approved or signed first")
+    
+    project_id = f"proj_{uuid.uuid4().hex[:12]}"
+    project_doc = {
+        "project_id": project_id,
+        "name": proposal["title"],
+        "description": proposal["description"],
+        "status": "active",
+        "client_name": proposal["client_name"],
+        "budget": proposal.get("amount"),
+        "start_date": None,
+        "end_date": None,
+        "completion_percentage": 0.0,
+        "milestones": [],
+        "created_by": user.user_id,
+        "team_members": [user.user_id],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.projects.insert_one(project_doc)
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {"project_id": project_id, "status": "converted"}}
+    )
+    
+    project_doc['created_at'] = datetime.fromisoformat(project_doc['created_at'])
+    return Project(**project_doc)
+
+@api_router.patch("/proposals/{proposal_id}")
+async def update_proposal(proposal_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.proposals.update_one({"proposal_id": proposal_id}, {"$set": updates})
+    return {"message": "Proposal updated"}
 
 @api_router.get("/proposals/{proposal_id}", response_model=Proposal)
 async def get_proposal_detail(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
