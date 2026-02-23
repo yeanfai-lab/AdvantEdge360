@@ -7,9 +7,18 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { FolderKanban, FileText, CheckSquare, Users, TrendingUp } from 'lucide-react';
+import { FolderKanban, FileText, CheckSquare, Users, TrendingUp, Calendar, AlertCircle, Clock, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+
+const taskStatuses = [
+  { id: 'not_started', label: 'Not Started', color: 'bg-muted' },
+  { id: 'in_progress', label: 'In Progress', color: 'bg-blue-500' },
+  { id: 'on_hold', label: 'On Hold', color: 'bg-yellow-500' },
+  { id: 'under_review', label: 'Under Review', color: 'bg-purple-500' },
+  { id: 'completed', label: 'Completed', color: 'bg-green-500' }
+];
 
 export const DashboardPage = () => {
   const { user } = useAuth();
@@ -21,6 +30,8 @@ export const DashboardPage = () => {
     team: 0
   });
   const [loading, setLoading] = useState(true);
+  const [myTasks, setMyTasks] = useState([]);
+  const [teamTasks, setTeamTasks] = useState([]);
   
   // Quick action dialogs
   const [projectDialog, setProjectDialog] = useState(false);
@@ -52,12 +63,22 @@ export const DashboardPage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [projectsRes, proposalsRes, tasksRes, teamRes] = await Promise.all([
+        const requests = [
           axios.get(`${API_URL}/projects`, { withCredentials: true }),
           axios.get(`${API_URL}/proposals`, { withCredentials: true }),
           axios.get(`${API_URL}/tasks`, { withCredentials: true }),
-          axios.get(`${API_URL}/team`, { withCredentials: true })
-        ]);
+          axios.get(`${API_URL}/team`, { withCredentials: true }),
+          axios.get(`${API_URL}/dashboard/my-tasks`, { withCredentials: true })
+        ];
+        
+        // Only fetch team tasks for managers
+        const isManager = user?.role && ['admin', 'manager', 'team_lead'].includes(user.role);
+        if (isManager) {
+          requests.push(axios.get(`${API_URL}/dashboard/team-tasks`, { withCredentials: true }));
+        }
+        
+        const responses = await Promise.all(requests);
+        const [projectsRes, proposalsRes, tasksRes, teamRes, myTasksRes] = responses;
 
         setStats({
           projects: projectsRes.data.length,
@@ -66,6 +87,11 @@ export const DashboardPage = () => {
           team: teamRes.data.length
         });
         setProjects(projectsRes.data);
+        setMyTasks(myTasksRes.data);
+        
+        if (isManager && responses[5]) {
+          setTeamTasks(responses[5].data);
+        }
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -73,8 +99,10 @@ export const DashboardPage = () => {
       }
     };
 
-    fetchStats();
-  }, []);
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
