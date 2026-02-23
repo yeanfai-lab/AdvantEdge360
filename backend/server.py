@@ -533,41 +533,6 @@ async def reject_proposal(proposal_id: str, reason: Optional[str] = None, sessio
     
     return {"message": "Proposal rejected"}
 
-async def convert_to_project(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
-    user = await get_user_from_token(session_token, authorization)
-    
-    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
-    if not proposal:
-        raise HTTPException(status_code=404, detail="Proposal not found")
-    
-    if proposal["status"] != "approved":
-        raise HTTPException(status_code=400, detail="Proposal must be approved first")
-    
-    project_id = f"proj_{uuid.uuid4().hex[:12]}"
-    project_doc = {
-        "project_id": project_id,
-        "name": proposal["title"],
-        "description": proposal["description"],
-        "status": "active",
-        "client_name": proposal["client_name"],
-        "budget": proposal.get("amount"),
-        "start_date": None,
-        "end_date": None,
-        "milestones": [],
-        "created_by": user.user_id,
-        "team_members": [user.user_id],
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.projects.insert_one(project_doc)
-    await db.proposals.update_one(
-        {"proposal_id": proposal_id},
-        {"$set": {"project_id": project_id, "status": "converted"}}
-    )
-    
-    project_doc['created_at'] = datetime.fromisoformat(project_doc['created_at'])
-    return Project(**project_doc)
-
 # ========== TASK ROUTES ==========
 
 @api_router.post("/tasks", response_model=Task)
