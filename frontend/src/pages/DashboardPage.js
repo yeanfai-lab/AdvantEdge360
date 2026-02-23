@@ -196,7 +196,7 @@ export const DashboardPage = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card className="p-6">
           <h3 className="text-xl font-heading font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-3">
@@ -247,6 +247,93 @@ export const DashboardPage = () => {
           </div>
         </Card>
       </div>
+
+      {/* My Tasks Section */}
+      <Card className="p-6 mb-6" data-testid="my-tasks-section">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-heading font-semibold">My Tasks</h3>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')}>
+            View All <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+        {myTasks.length === 0 ? (
+          <p className="text-muted-foreground text-center py-6">No tasks assigned to you</p>
+        ) : (
+          <div className="space-y-3">
+            {myTasks.slice(0, 5).map((task) => {
+              const statusInfo = taskStatuses.find(s => s.id === task.status) || taskStatuses[0];
+              return (
+                <div 
+                  key={task.task_id} 
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    const project = projects.find(p => p.project_id === task.project_id);
+                    if (project) navigate(`/projects/${task.project_id}`);
+                  }}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-sm">{task.title}</h4>
+                      <span className={`w-2 h-2 rounded-full ${statusInfo.color}`}></span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className={`px-2 py-0.5 rounded-full ${
+                        task.priority === 'urgent' ? 'bg-red-500/20 text-red-600' :
+                        task.priority === 'high' ? 'bg-orange-500/20 text-orange-600' :
+                        task.priority === 'medium' ? 'bg-blue-500/20 text-blue-600' :
+                        'bg-slate-500/20 text-slate-600'
+                      }`}>{task.priority}</span>
+                      {task.due_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {task.due_date}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* Team Kanban for Managers */}
+      {user?.role && ['admin', 'manager', 'team_lead'].includes(user.role) && teamTasks.length > 0 && (
+        <Card className="p-6" data-testid="team-kanban-section">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-heading font-semibold">Team Tasks Overview</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {taskStatuses.filter(s => s.id !== 'not_started').map((status) => (
+              <div key={status.id} className="bg-muted/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                  <h4 className="font-medium text-sm">{status.label}</h4>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {teamTasks.flatMap(tm => 
+                    tm.tasks.filter(t => t.status === status.id).map(task => ({
+                      ...task,
+                      assignee: tm.user.name
+                    }))
+                  ).slice(0, 5).map((task) => (
+                    <div 
+                      key={task.task_id} 
+                      className="p-2 bg-card rounded border text-xs cursor-pointer hover:shadow-sm transition-shadow"
+                      onClick={() => navigate(`/projects/${task.project_id}`)}
+                    >
+                      <p className="font-medium mb-1 line-clamp-1">{task.title}</p>
+                      <p className="text-muted-foreground">{task.assignee}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Create Project Dialog */}
       <Dialog open={projectDialog} onOpenChange={setProjectDialog}>
