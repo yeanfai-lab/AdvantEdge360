@@ -579,6 +579,184 @@ async def update_task(task_id: str, updates: dict, session_token: Optional[str] 
     user = await get_user_from_token(session_token, authorization)
     
     await db.tasks.update_one({"task_id": task_id}, {"$set": updates})
+
+@api_router.post("/tasks/{task_id}/add-comment")
+async def add_task_comment(task_id: str, comment: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    comment_obj = {
+        "user_id": user.user_id,
+        "user_name": user.name,
+        "comment": comment,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {"$push": {"comments": comment_obj}}
+    )
+    
+    return {"message": "Comment added"}
+
+@api_router.post("/tasks/{task_id}/send-for-review")
+async def send_for_review(task_id: str, reviewer_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {"$set": {
+            "status": "under_review",
+            "reviewer_id": reviewer_id
+        }}
+    )
+    
+    # Notify reviewer
+    reviewer = await db.users.find_one({"user_id": reviewer_id}, {"_id": 0})
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if reviewer and reviewer.get("email") and task:
+        await send_email_via_gmail(
+            user.user_id,
+            reviewer["email"],
+            f"Task Review Request: {task['title']}",
+            f"Hello {reviewer['name']},\n\nPlease review the task: {task['title']}\n\n"
+            f"Project: {task.get('project_id', 'N/A')}\n\n"
+            f"Log in to review and provide feedback.\n\nBest regards,\n{user.name}"
+        )
+    
+    return {"message": "Task sent for review"}
+
+@api_router.post("/tasks/{task_id}/approve-review")
+async def approve_task_review(task_id: str, notes: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {"$set": {
+            "status": "completed",
+            "review_notes": notes,
+            "completion_percentage": 100.0
+        }}
+    )
+    
+    # Update project completion
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if task:
+        await update_project_completion(task["project_id"])
+    
+    return {"message": "Task approved"}
+
+@api_router.post("/tasks/{task_id}/return-for-revision")
+async def return_for_revision(task_id: str, notes: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {"$set": {
+            "status": "in_progress",
+            "review_notes": notes
+        }}
+    )
+    
+    return {"message": "Task returned for revision"}
+
+async def update_project_completion(project_id: str):
+    """Calculate and update project completion percentage"""
+    tasks = await db.tasks.find({"project_id": project_id}, {"_id": 0}).to_list(1000)
+    
+    if not tasks:
+        return
+    
+    total_tasks = len(tasks)
+    completed_tasks = len([t for t in tasks if t.get("status") == "completed"])
+    in_progress_tasks = len([t for t in tasks if t.get("status") == "in_progress"])
+    not_started_tasks = len([t for t in tasks if t.get("status") == "not_started"])
+    
+    completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+    
+    await db.projects.update_one(
+        {"project_id": project_id},
+        {"$set": {"completion_percentage": round(completion_percentage, 2)}}
+    )
+
+@api_router.get("/projects/{project_id}/stats")
+async def get_project_stats(project_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    tasks = await db.tasks.find({"project_id": project_id}, {"_id": 0}).to_list(1000)
+    
+    total_tasks = len(tasks)
+    completed = len([t for t in tasks if t.get("status") == "completed"])
+    in_progress = len([t for t in tasks if t.get("status") == "in_progress"])
+    under_review = len([t for t in tasks if t.get("status") == "under_review"])
+    on_hold = len([t for t in tasks if t.get("status") == "on_hold"])
+    not_started = len([t for t in tasks if t.get("status") == "not_started"])
+    
+    # Check for overdue tasks
+    today = datetime.now(timezone.utc).date()
+    overdue_tasks = []
+    for task in tasks:
+        if task.get("end_date") and task.get("status") not in ["completed"]:
+            end_date = datetime.fromisoformat(task["end_date"]).date() if isinstance(task["end_date"], str) else task["end_date"]
+            if end_date < today:
+                overdue_tasks.append(task["task_id"])
+                await db.tasks.update_one({"task_id": task["task_id"]}, {"$set": {"is_overdue": True}})
+    
+    completion_percentage = (completed / total_tasks * 100) if total_tasks > 0 else 0
+    in_progress_percentage = (in_progress / total_tasks * 100) if total_tasks > 0 else 0
+    not_started_percentage = (not_started / total_tasks * 100) if total_tasks > 0 else 0
+    
+    return {
+        "total_tasks": total_tasks,
+        "completed": completed,
+        "in_progress": in_progress,
+        "under_review": under_review,
+        "on_hold": on_hold,
+        "not_started": not_started,
+        "overdue": len(overdue_tasks),
+        "completion_percentage": round(completion_percentage, 2),
+        "in_progress_percentage": round(in_progress_percentage, 2),
+        "not_started_percentage": round(not_started_percentage, 2)
+    }
+
+@api_router.get("/dashboard/my-tasks")
+async def get_my_tasks(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    tasks = await db.tasks.find({"assigned_to": user.user_id}, {"_id": 0}).to_list(1000)
+    for task in tasks:
+        if isinstance(task.get('created_at'), str):
+            task['created_at'] = datetime.fromisoformat(task['created_at'])
+    
+    return tasks
+
+@api_router.get("/dashboard/team-tasks")
+async def get_team_tasks(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "team_lead"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all users
+    team_members = await db.users.find({}, {"_id": 0}).to_list(1000)
+    
+    team_tasks = []
+    for member in team_members:
+        tasks = await db.tasks.find({
+            "assigned_to": member["user_id"],
+            "status": {"$ne": "not_started"}
+        }, {"_id": 0}).to_list(1000)
+        
+        for task in tasks:
+            if isinstance(task.get('created_at'), str):
+                task['created_at'] = datetime.fromisoformat(task['created_at'])
+        
+        team_tasks.append({
+            "user": member,
+            "tasks": tasks
+        })
+    
+    return team_tasks
+
     return {"message": "Task updated"}
 
 # ========== TIME TRACKING ROUTES ==========
