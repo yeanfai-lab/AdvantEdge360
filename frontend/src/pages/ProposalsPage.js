@@ -1,17 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_URL } from '../lib/utils';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Plus, FileText, Check, HardDrive, Send, Eye } from 'lucide-react';
+import { Plus, FileText, Check, HardDrive, Send, Eye, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+
+const categories = [
+  'Individual - Residential',
+  'Housing',
+  'Commercial',
+  'Institutional',
+  'Hospitality'
+];
 
 export const ProposalsPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
