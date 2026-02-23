@@ -77,21 +77,35 @@ class Proposal(BaseModel):
     proposal_id: str
     title: str
     client_name: str
+    requirement: Optional[str] = None
+    scope_area: Optional[str] = None
+    final_proposal: Optional[str] = None
+    category: Optional[str] = None  # Individual-Residential, Housing, Commercial, Institutional, Hospitality
     description: str
     version: int = 1
-    status: str = "draft"
+    status: str = "draft"  # draft, pending_approval, approved, sent_to_client, signed, rejected, converted
     amount: Optional[float] = None
     created_by: str
     approved_by: Optional[List[str]] = []
+    approver_id: Optional[str] = None
+    approver_comments: Optional[str] = None
+    approval_status: Optional[str] = None  # pending, approved, returned
+    signature_type: Optional[str] = None  # zoho_sign, manual
+    manual_approval_date: Optional[str] = None
     project_id: Optional[str] = None
     drive_file_id: Optional[str] = None
     drive_file_name: Optional[str] = None
     drive_file_link: Optional[str] = None
+    pdf_attachment: Optional[str] = None
     created_at: datetime
 
 class ProposalCreate(BaseModel):
     title: str
     client_name: str
+    requirement: Optional[str] = None
+    scope_area: Optional[str] = None
+    final_proposal: Optional[str] = None
+    category: Optional[str] = None
     description: str
     amount: Optional[float] = None
 
@@ -101,8 +115,22 @@ class Task(BaseModel):
     project_id: str
     title: str
     description: Optional[str] = None
-    status: str = "todo"
+    status: str = "not_started"  # not_started, in_progress, on_hold, under_review, completed
     priority: str = "medium"
+    assigned_to: Optional[str] = None
+    reviewer_id: Optional[str] = None
+    comments: List[dict] = []
+    review_notes: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    completion_percentage: float = 0.0
+    is_overdue: bool = False
+    due_date: Optional[str] = None
+    parent_task_id: Optional[str] = None
+    subtasks: List[str] = []
+    time_logs: List[dict] = []
+    created_by: str
+    created_at: datetime
     assigned_to: Optional[str] = None
     due_date: Optional[str] = None
     parent_task_id: Optional[str] = None
