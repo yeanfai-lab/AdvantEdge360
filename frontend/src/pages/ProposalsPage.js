@@ -203,7 +203,7 @@ export const ProposalsPage = () => {
                 New Proposal
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Proposal</DialogTitle>
               </DialogHeader>
@@ -218,13 +218,46 @@ export const ProposalsPage = () => {
                     data-testid="proposal-title-input"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Client Name</label>
+                    <Input
+                      value={formData.client_name}
+                      onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                      placeholder="Client name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Category</label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Client Name</label>
-                  <Input
-                    value={formData.client_name}
-                    onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                    placeholder="Client name"
-                    required
+                  <label className="text-sm font-medium mb-2 block">Requirement</label>
+                  <Textarea
+                    value={formData.requirement}
+                    onChange={(e) => setFormData({ ...formData, requirement: e.target.value })}
+                    placeholder="What does the client need?"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Scope / Area to be Worked On</label>
+                  <Textarea
+                    value={formData.scope_area}
+                    onChange={(e) => setFormData({ ...formData, scope_area: e.target.value })}
+                    placeholder="Define the scope and area"
+                    rows={2}
                   />
                 </div>
                 <div>
@@ -234,7 +267,7 @@ export const ProposalsPage = () => {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Proposal description"
                     required
-                    rows={4}
+                    rows={3}
                   />
                 </div>
                 <div>
