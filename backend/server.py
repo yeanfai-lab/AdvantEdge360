@@ -390,6 +390,107 @@ async def approve_proposal(proposal_id: str, session_token: Optional[str] = Cook
     return {"message": "Proposal approved"}
 
 @api_router.post("/proposals/{proposal_id}/convert")
+
+@api_router.get("/proposals/{proposal_id}", response_model=Proposal)
+async def get_proposal_detail(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    if isinstance(proposal['created_at'], str):
+        proposal['created_at'] = datetime.fromisoformat(proposal['created_at'])
+    return Proposal(**proposal)
+
+@api_router.post("/proposals/{proposal_id}/send-for-internal-approval")
+async def send_for_internal_approval(proposal_id: str, approver_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "pending_approval",
+            "approver_id": approver_id,
+            "approval_status": "pending"
+        }}
+    )
+    
+    # Send notification to approver
+    approver = await db.users.find_one({"user_id": approver_id}, {"_id": 0})
+    if approver and approver.get("email"):
+        proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+        await send_email_via_gmail(
+            user.user_id,
+            approver["email"],
+            f"Proposal Approval Request: {proposal['title']}",
+            f"Hello {approver['name']},\n\nPlease review and approve the proposal: {proposal['title']}\n\n"
+            f"Client: {proposal['client_name']}\n"
+            f"Amount: ${proposal.get('amount', 0):,.2f}\n\n"
+            f"Log in to the system to review and approve.\n\nBest regards,\n{user.name}"
+        )
+    
+    return {"message": "Proposal sent for internal approval"}
+
+@api_router.post("/proposals/{proposal_id}/approve-internal")
+async def approve_internal(proposal_id: str, comments: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "approved",
+            "approval_status": "approved",
+            "approver_comments": comments
+        }}
+    )
+    
+    return {"message": "Proposal approved"}
+
+@api_router.post("/proposals/{proposal_id}/return-to-sender")
+async def return_to_sender(proposal_id: str, comments: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "draft",
+            "approval_status": "returned",
+            "approver_comments": comments
+        }}
+    )
+    
+    return {"message": "Proposal returned to sender"}
+
+@api_router.post("/proposals/{proposal_id}/manual-approval")
+async def manual_approval(proposal_id: str, approval_date: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "signed",
+            "signature_type": "manual",
+            "manual_approval_date": approval_date
+        }}
+    )
+    
+    return {"message": "Manual approval recorded"}
+
+@api_router.post("/proposals/{proposal_id}/reject")
+async def reject_proposal(proposal_id: str, reason: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "rejected",
+            "approver_comments": reason
+        }}
+    )
+    
+    return {"message": "Proposal rejected"}
+
 async def convert_to_project(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
