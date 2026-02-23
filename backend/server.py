@@ -54,11 +54,12 @@ class Project(BaseModel):
     project_id: str
     name: str
     description: str
-    status: str = "active"
+    status: str = "ongoing"  # ongoing, on_hold, completed
     client_name: Optional[str] = None
     budget: Optional[float] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    completion_percentage: float = 0.0
     milestones: List[dict] = []
     created_by: str
     team_members: List[str] = []
