@@ -71,7 +71,7 @@ export const ProposalsPage = () => {
       }, { withCredentials: true });
       toast.success('Proposal created successfully');
       setIsDialogOpen(false);
-      setFormData({ title: '', client_name: '', description: '', amount: '' });
+      setFormData({ title: '', client_name: '', description: '', amount: '', category: '', requirement: '', scope_area: '' });
       fetchProposals();
     } catch (error) {
       toast.error('Failed to create proposal');
