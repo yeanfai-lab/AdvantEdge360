@@ -52,11 +52,31 @@ function AppRouter() {
         }
       />
       <Route
+        path="/projects/:projectId"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ProjectDetailPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/proposals"
         element={
           <ProtectedRoute>
             <AppLayout>
               <ProposalsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/proposals/:proposalId"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ProposalDetailPage />
             </AppLayout>
           </ProtectedRoute>
         }
