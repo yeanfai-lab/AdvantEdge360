@@ -170,7 +170,10 @@ export const ProposalsPage = () => {
   const getStatusColor = (status) => {
     const colors = {
       draft: 'bg-muted text-foreground',
+      pending_approval: 'bg-yellow-500/20 text-yellow-600',
       approved: 'bg-chart-4/20 text-chart-4',
+      sent_to_client: 'bg-blue-500/20 text-blue-600',
+      signed: 'bg-green-500/20 text-green-600',
       converted: 'bg-chart-1/20 text-chart-1',
       rejected: 'bg-destructive/20 text-destructive'
     };
