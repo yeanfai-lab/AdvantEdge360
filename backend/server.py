@@ -764,8 +764,6 @@ async def get_team_tasks(session_token: Optional[str] = Cookie(None), authorizat
     
     return team_tasks
 
-    return {"message": "Task updated"}
-
 # ========== TIME TRACKING ROUTES ==========
 
 @api_router.post("/time-logs", response_model=TimeLog)
