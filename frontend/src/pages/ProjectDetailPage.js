@@ -190,7 +190,7 @@ export const ProjectDetailPage = () => {
     return <Card className="p-12 text-center"><p className="text-muted-foreground">Project not found</p></Card>;
   }
 
-  const isManager = user?.role in ['admin', 'manager', 'team_lead'];
+  const isManager = user?.role && ['admin', 'manager', 'team_lead'].includes(user.role);
   const isReviewer = selectedTask?.reviewer_id === user?.user_id;
 
   return (
