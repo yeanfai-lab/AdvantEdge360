@@ -158,7 +158,12 @@ export const ProjectsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <Card key={project.project_id} className="p-6 hover:shadow-md transition-shadow" data-testid={`project-card-${project.project_id}`}>
+            <Card 
+              key={project.project_id} 
+              className="p-6 hover:shadow-md transition-shadow cursor-pointer" 
+              data-testid={`project-card-${project.project_id}`}
+              onClick={() => navigate(`/projects/${project.project_id}`)}
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-heading font-semibold mb-2">{project.name}</h3>
@@ -166,15 +171,33 @@ export const ProjectsPage = () => {
                     <p className="text-sm text-muted-foreground mb-2">Client: {project.client_name}</p>
                   )}
                 </div>
-                <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-muted text-foreground">
+                <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary/20 text-primary">
                   {project.status}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{project.description}</p>
+              
+              {/* Completion Progress */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">Completion</span>
+                  <span className="text-xs font-medium">{project.completion_percentage || 0}%</span>
+                </div>
+                <Progress value={project.completion_percentage || 0} className="h-2" />
+              </div>
+              
               {project.budget && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">Budget</p>
-                  <p className="text-lg font-mono font-semibold">${project.budget.toLocaleString()}</p>
+                <div className="pt-4 border-t flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Budget</p>
+                    <p className="text-lg font-mono font-semibold">${project.budget.toLocaleString()}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              )}
+              {!project.budget && (
+                <div className="pt-4 border-t flex items-center justify-end">
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}
             </Card>
