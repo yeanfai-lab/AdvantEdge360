@@ -235,12 +235,16 @@ export const TasksPage = () => {
       </div>
 
       <div className="mb-6">
-        <Select value={selectedProject} onValueChange={(value) => { setSelectedProject(value); fetchTasks(value); }}>
+        <Select value={selectedProject || "all"} onValueChange={(value) => { 
+          const projectFilter = value === "all" ? "" : value;
+          setSelectedProject(projectFilter); 
+          fetchTasks(projectFilter); 
+        }}>
           <SelectTrigger className="w-64">
             <SelectValue placeholder="All Projects" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Projects</SelectItem>
+            <SelectItem value="all">All Projects</SelectItem>
             {projects.map((project) => (
               <SelectItem key={project.project_id} value={project.project_id}>
                 {project.name}
