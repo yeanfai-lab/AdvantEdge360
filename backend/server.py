@@ -586,6 +586,14 @@ async def update_task(task_id: str, updates: dict, session_token: Optional[str] 
     user = await get_user_from_token(session_token, authorization)
     
     await db.tasks.update_one({"task_id": task_id}, {"$set": updates})
+    
+    # Update project completion if status changed
+    if "status" in updates:
+        task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+        if task:
+            await update_project_completion(task["project_id"])
+    
+    return {"message": "Task updated"}
 
 @api_router.post("/tasks/{task_id}/add-comment")
 async def add_task_comment(task_id: str, comment: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
