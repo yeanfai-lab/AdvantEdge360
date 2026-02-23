@@ -35,7 +35,10 @@ export const ProposalsPage = () => {
     title: '',
     client_name: '',
     description: '',
-    amount: ''
+    amount: '',
+    category: '',
+    requirement: '',
+    scope_area: ''
   });
 
   useEffect(() => {
