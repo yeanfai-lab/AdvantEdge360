@@ -6,7 +6,9 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ## Core Modules
 
 ### 1. Client Management
-- Company/Contact hierarchy
+- **Company/Contact hierarchy** with full CRUD for both
+- **Company fields**: Name, Industry, Website, Phone, Business Address, GST Number, PAN Number
+- **Contact fields**: Name, Email, Phone, Position, Company, Business Address, GST Number, PAN Number, Notes
 - Custom fields support
 - Status tracking
 - Linked to projects, invoices, and reports
@@ -30,7 +32,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - Integrated task management (tasks shown within project detail)
 - Completion percentage calculated from task statuses
 - Project stats (total, in progress, completed, overdue tasks)
-- Budget, timeline, milestones tracking
+- Budget (in ₹), timeline, milestones tracking
 - **View Toggle**: Tile view and List view with sortable columns
 
 ### 4. Task Management
@@ -50,41 +52,92 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - Start/End dates
 - **Built-in Time Tracker**:
   - Start/Stop timer per task
+  - Pause/Resume functionality
   - One active timer per user at a time
   - Auto-logs time to task → project → client
   - Total tracked time displayed per task
+  - Editable/Deletable time entries
 
 ### 5. Dashboard
 - Statistics cards (clickable, navigate to respective pages)
-- My Tasks section (user's assigned tasks)
-- Team Kanban board (for managers - shows team members' tasks by status)
-- Quick Actions (Create Project, Draft Proposal, Add Task)
+- **My Tasks section**: User's assigned tasks with Project Name & Client Name displayed
+- **Pending Team Requests Panel** (for Admin/Manager/Supervisor):
+  - Leave Applications count with link
+  - Reimbursements count with link
+- **Team Tasks Overview** (for managers):
+  - Filter by Status / Team Member / Project
+  - Excludes completed tasks
+- **Quick Actions** (matching actual page forms):
+  - Create Project (with client, budget ₹, dates)
+  - Draft Proposal (with category, requirement)
+  - Add Task (with project selector, priority)
+- Pending Reviews section (tasks under review)
+- Pending Proposal Approvals section
 
 ### 6. Team Management
-- Role-based access (Admin, Manager, Team Lead, Team Member, Finance)
+- Role-based access (Admin, Manager, Supervisor, Team Lead, Team Member, Finance)
 - User profiles and skills
+- **Leave Applications** (separate page):
+  - Types: Casual, Sick, Earned/Annual, Unpaid, Work from Home
+  - Apply, Approve/Reject workflow
+  - Pending count for managers
+- **Reimbursements** (separate page):
+  - Categories: Travel, Equipment, Office Supplies, Client Entertainment, Other
+  - Status: Pending → Approved → Paid
+  - Amount in ₹
+  - Mark as Paid by Finance role
 
 ### 7. Time Tracking
 - Task-level time logging
 - Billable/non-billable hours
 - Mobile-responsive
 - Timer integration from project detail page
+- Pause/Resume functionality
+- Editable time entries
 
-### 8. Finance
-- Project budgets
-- Invoices and expenses
-- Revenue tracking
+### 8. Finance Module (REDESIGNED)
+- **Currency**: Indian Rupee (₹) throughout the portal
+- **Fee Structure Tab**:
+  - Project dropdown selector
+  - CRUD table with fields:
+    - Stage
+    - Deliverable
+    - Percentage of Total Value
+    - Amount (₹)
+    - Tentative Billing Date
+    - Deliverable Status (Not Started / In Progress / On Hold / Completed)
+    - Invoice Status (Not Invoiced / Invoiced / Paid)
+    - Payment Status (Pending / Received)
+- **Project Profitability Tab** (READ-ONLY):
+  - Derived from Fee Structure + Labor Costs
+  - Shows: Project Value, Received, Pending, Labor Cost, Billable Hours, Profit
+- **Cash Flow Projection Tab**:
+  - 6 months at a time with toggle (Months 1-6 / Months 7-12)
+  - Income row: Derived from Fee Structure (tentative billing dates)
+  - Expenses: Editable table with Expense Head, Sub-Head, Monthly Amounts
+  - Auto-calculated totals
+  - Net Cash Flow = Total Income - Total Expenses
+- **Labor Costs Tab**:
+  - Team Salary Table (editable):
+    - Team Member
+    - Monthly Salary (₹)
+    - Hourly Rate (₹/hr)
+    - Daily Rate (₹/day)
+  - Labor Cost per Project:
+    - Calculated as Hourly Rate × Billable Hours per team member
+    - Breakdown by user per project
 
 ### 9. Reports & Analytics
 - Project performance
 - Team productivity
 - Financial summaries
-- CSV export (PDF planned)
+- CSV export
+- PDF export (using reportlab)
 
 ## Technical Architecture
 
 ### Frontend
-- React with React Router
+- React 18 with React Router
 - Tailwind CSS + shadcn/ui components
 - Custom theme: Teal/Dark Grey, PT Sans Narrow font
 - Axios for API calls
@@ -97,238 +150,81 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ### Database
 - MongoDB (Motor async driver)
-- Collections: users, proposals, projects, tasks, time_logs, active_timers, companies, contact_persons
-
-## Integrations (DEMO MODE)
-- **Google Drive**: For proposal document attachments
-- **Gmail**: For email notifications
-- **Zoho Sign**: For electronic signatures
-- **Google OAuth**: For user authentication (WORKING)
-
-## What's Been Implemented
-
-### December 2025 - V3 Enhancements
-- [x] Proposal versioning system (auto-save, history, restore)
-- [x] Tile/List view toggle for Proposals and Projects
-- [x] Sortable columns in list views
-- [x] Built-in time tracker (start/stop per task per user)
-- [x] Sub-tasks system with nesting
-- [x] Comment edit/delete functionality
-- [x] Enhanced reviewer actions (Approve & Continue, Return to Owner)
-- [x] Active timer banner display
-- [x] Inline editing for proposal fields
-
-### December 2025 - V4 Enhancements (Latest)
-- [x] PDF export for reports (projects, tasks, time logs, team productivity, overview)
-- [x] Custom React hooks (useProposals, useProjects, useTasks, useTimer)
-- [x] Backend modular structure started (models, services, utils)
-- [x] Export dropdown menus with CSV/PDF options
-- [x] Proposal action dropdown with workflow actions (Send for Approval, Send to Client, Confirm, Convert)
-- [x] Enhanced filtering on Tasks page (by priority, assignee, project)
-- [x] Global timer ribbon sticky positioning for better UX
-- [x] Full CRUD on Proposals - all fields inline editable (title, client, status, category, requirement, scope, description, amount)
-- [x] Full CRUD on Projects - Edit dialog with all fields
-- [x] Full CRUD on Tasks - Edit dialog with all fields (title, description, priority, status, assignee, reviewer, dates)
-- [x] Task deletion with confirmation
-- [x] Clean seed data: 1 company, 1 client, 1 proposal, 1 project, 2 tasks with 2 subtasks each
-
-### December 2025 - V5 Enhancements (Phase 1, 3, 4)
-**Phase 1: Task & Time Tracking**
-- [x] Task creation with project/task nesting to auto-create subtasks
-- [x] Time tracking with Project → Task → Subtask selection
-- [x] Timer pause/resume functionality
-- [x] Manual time entry with edit/delete capabilities
-- [x] Weekly timesheet view
-
-**Phase 3: Role-Based Access Control**
-- [x] Admin: Full access to all features
-- [x] Supervisor: Operational data only, no financial access
-- [x] Manager: Project management with financial access
-- [x] Team Member: Own tasks only
-- [x] GET /api/roles endpoint for role permissions
-- [x] GET /api/user/permissions endpoint
-- [x] Team management CRUD with role editing
-- [x] Role-based task filtering
-
-**Phase 4: Finance Module**
-- [x] Project Profitability view (income, pending, expenses, labor cost, profit)
-- [x] Cash Flow 6-month projection
-- [x] Labor Cost per project (billable hours × rate)
-- [x] Expense CRUD (edit/delete)
-- [x] Expense categories (Travel, Equipment, Office Supplies, Client Entertainment, Software, Utilities, Other)
-
-### December 2025 - V6 Enhancements (Phase 2: Team Management)
-- [x] Leave Applications CRUD + Approval workflow
-  - Leave types: Casual, Sick, Earned/Annual, Unpaid, Work from Home
-  - Supervisor/Manager can approve/reject with comments
-  - Team members see only their own leaves
-- [x] Reimbursements CRUD + Approval workflow
-  - Categories: Travel, Equipment, Office Supplies, Client Entertainment, Other
-  - Status: pending → approved → paid
-  - Finance role can mark as paid
-- [x] Performance Reviews CRUD (hidden from navigation per user request)
-  - Supervisor creates reviews with 1-5 star rating
-  - Reviewer submits, reviewed person acknowledges
-  - Includes strengths, areas for improvement, goals
-- [x] Onboarding Forms (hidden from navigation per user request)
-  - Personal info, emergency contact, bank details
-  - Education history (dynamic list)
-  - Work experience history (dynamic list)
-  - Submit for approval workflow
-- [x] Team Requests Summary API
-  - GET /api/team-requests/pending returns all pending requests
-
-### December 2025 - V7 Navigation Refactor
-- [x] Team dropdown in sidebar with nested items:
-  - Team Members (/team)
-  - Leave Applications (/leave-reimbursement)
-  - Reimbursements (/reimbursements)
-- [x] Performance Reviews and Onboarding pages hidden from navigation
-- [x] Dropdown expand/collapse functionality with chevron icons
-- [x] Active state highlighting for nested nav items
-
-### December 2025 - Initial Overhaul
-- [x] Enhanced Proposal workflow with approval cycle
-- [x] ProposalDetailPage with full CRUD and approval controls
-- [x] Integrated Project/Task view (tasks within project detail)
-- [x] Project completion percentage calculation
-- [x] Dashboard My Tasks section
-- [x] Dashboard Team Kanban for managers
-- [x] Clickable navigation between pages
-
-### Previous Implementation
-- [x] All core module UI and backend routes
-- [x] Google Social Login
-- [x] Company/Contact hierarchy in clients
-- [x] CSV export for reports
-- [x] Mobile-responsive time tracking
-- [x] Custom teal/dark grey theme
-
-## Backlog (P1/P2)
-
-### P1 - High Priority
-- [ ] Activate Google Drive file picker UI
-- [ ] Full proposal sending workflow
-- [ ] Real Zoho Sign API integration (requires API keys)
-- [ ] Real Gmail notifications (requires API keys)
-- [ ] File attachments with cloud storage
-
-### P2 - Medium Priority (Phase 2: Team Management) - COMPLETED
-- [x] Onboarding forms for new hires (personal info, bank details, emergency contacts, education, work experience)
-- [x] Leave applications CRUD + approval workflow (Casual, Sick, Earned/Annual, Unpaid, WFH)
-- [x] Reimbursements CRUD + approval workflow (Travel, Equipment, Office Supplies, Client Entertainment, Other)
-- [x] Performance reviews CRUD + approval workflow (draft → submitted → acknowledged)
-- [x] Supervisor dashboard for team requests
-- [ ] Native mobile app for time tracking
+- **Collections**: users, proposals, projects, tasks, time_logs, active_timers, companies, clients, fee_structure, team_salaries, cashflow_expenses, leaves, reimbursements
 
 ## API Endpoints
 
-### Authentication
-- POST /api/auth/session - Create session
-- GET /api/auth/me - Get current user
-- POST /api/auth/logout - Logout
+### Finance Module
+- `GET/POST /api/fee-structure` - Fee structure items
+- `PATCH/DELETE /api/fee-structure/{item_id}` - Update/Delete fee item
+- `GET/POST /api/team-salaries` - Team salary information
+- `PATCH/DELETE /api/team-salaries/{salary_id}` - Update/Delete salary
+- `GET/POST /api/cashflow-expenses` - Cash flow expenses
+- `PATCH/DELETE /api/cashflow-expenses/{expense_id}` - Update/Delete expense
 
-### Proposals
-- POST /api/proposals - Create proposal
-- GET /api/proposals - List proposals
-- GET /api/proposals/{id} - Get proposal detail
-- PATCH /api/proposals/{id} - Update proposal (triggers versioning)
-- GET /api/proposals/{id}/versions - Get version history
-- POST /api/proposals/{id}/restore-version/{num} - Restore version
-- POST /api/proposals/{id}/send-for-internal-approval
-- POST /api/proposals/{id}/approve-internal
-- POST /api/proposals/{id}/return-to-sender
-- POST /api/proposals/{id}/manual-approval
-- POST /api/proposals/{id}/reject
-- POST /api/proposals/{id}/convert
+### Team Management
+- `GET/POST /api/leaves` - Leave applications
+- `PATCH /api/leaves/{id}/approve|reject` - Leave actions
+- `GET/POST /api/reimbursements` - Reimbursement requests
+- `PATCH /api/reimbursements/{id}/approve|reject|mark-paid` - Reimbursement actions
 
-### Projects
-- POST /api/projects - Create project
-- GET /api/projects - List projects
-- GET /api/projects/{id} - Get project
-- PATCH /api/projects/{id} - Update project
-- GET /api/projects/{id}/stats - Get project stats
+### Clients
+- `GET/POST /api/companies` - Company CRUD
+- `PATCH/DELETE /api/companies/{id}` - Update/Delete company
+- `GET/POST /api/clients` - Contact CRUD
+- `PATCH/DELETE /api/clients/{id}` - Update/Delete contact
 
-### Tasks
-- POST /api/tasks - Create task (supports parent_task_id for subtasks)
-- GET /api/tasks - List tasks
-- GET /api/tasks/{id} - Get task with subtask details
-- PATCH /api/tasks/{id} - Update task
-- POST /api/tasks/{id}/add-comment
-- PATCH /api/tasks/{id}/comments/{cid} - Edit comment
-- DELETE /api/tasks/{id}/comments/{cid} - Delete comment
-- POST /api/tasks/{id}/send-for-review
-- POST /api/tasks/{id}/approve-review
-- POST /api/tasks/{id}/return-to-owner
-- POST /api/tasks/{id}/return-for-revision
+---
 
-### Timer
-- POST /api/timer/start - Start timer for task
-- POST /api/timer/stop - Stop timer and log time
-- GET /api/timer/active - Get active timer
-- DELETE /api/timer/cancel - Cancel timer without logging
+## Implementation Status
 
-### Dashboard
-- GET /api/dashboard/my-tasks
-- GET /api/dashboard/team-tasks
-- GET /api/dashboard/pending-reviews
-- GET /api/dashboard/pending-approvals
+### December 2025 - V8 Major Update (All 4 Phases Complete)
 
-### Reports & Export (New in V4)
-- GET /api/reports/overview
-- GET /api/reports/project-performance
-- GET /api/reports/team-productivity
-- GET /api/reports/export/projects (CSV)
-- GET /api/reports/export/projects/pdf (PDF)
-- GET /api/reports/export/tasks (CSV)
-- GET /api/reports/export/tasks/pdf (PDF)
-- GET /api/reports/export/time-logs (CSV)
-- GET /api/reports/export/time-logs/pdf (PDF)
-- GET /api/reports/export/team-productivity (CSV)
-- GET /api/reports/export/team-productivity/pdf (PDF)
-- GET /api/reports/export/overview/pdf (PDF)
+#### Phase D: Finance Module Overhaul
+- [x] Changed currency from $ to ₹ (Indian Rupee) throughout
+- [x] Removed Invoices & Expenses section
+- [x] Fee Structure Tab with project-wise CRUD
+- [x] Project Profitability (read-only, derived)
+- [x] Cash Flow Projection with 6-month toggle
+- [x] Editable expenses table with auto-totals
+- [x] Labor Costs Tab with team salary table
+- [x] Labor cost calculation (hourly rate × billable hours)
 
-## File Structure
-```
-/app
-├── backend/
-│   ├── server.py          # Main FastAPI application
-│   ├── requirements.txt
-│   ├── models/            # Pydantic models (NEW)
-│   ├── services/          # Business logic services (NEW)
-│   │   └── pdf_service.py # PDF generation
-│   ├── utils/             # Utility functions (NEW)
-│   └── .env
-├── frontend/
-│   └── src/
-│       ├── components/    # shadcn/ui components
-│       ├── contexts/      # AuthContext
-│       ├── hooks/         # Custom hooks (NEW)
-│       │   ├── useProposals.js
-│       │   ├── useProjects.js
-│       │   ├── useTasks.js
-│       │   └── useTimer.js
-│       ├── layouts/       # AppLayout with sidebar
-│       └── pages/
-│           ├── DashboardPage.js
-│           ├── ProposalsPage.js
-│           ├── ProposalDetailPage.js
-│           ├── ProjectsPage.js
-│           ├── ProjectDetailPage.js
-│           ├── TasksPage.js
-│           ├── ReportsPage.js (Enhanced with PDF export)
-│           ├── ClientsPage.js
-│           ├── ClientDetailPage.js
-│           └── ...
-├── memory/
-│   └── PRD.md
-└── test_reports/
-    ├── iteration_4.json
-    └── iteration_5.json
-```
+#### Phase C: Team Module Separation
+- [x] Leave Applications as separate page
+- [x] Reimbursements as separate page
+- [x] Each page focused on its own content/actions
 
-## Testing
-- Backend: pytest with API tests (100% pass rate)
-- Frontend: Playwright automation
-- All features verified working
-- Latest test report: iteration_5.json
+#### Phase B: Clients Enhancement
+- [x] Full CRUD for Company (create, edit, delete)
+- [x] New fields for Company: Business Address, GST Number, PAN Number
+- [x] New fields for Contact: Business Address, GST Number, PAN Number
+- [x] Edit dialogs for both Company and Contact
+
+#### Phase A: Dashboard Enhancement
+- [x] Updated Quick Actions to match actual page forms
+- [x] Pending Team Requests panel for managers (leave/reimbursement counts)
+- [x] My Tasks with Project Name & Client Name displayed
+- [x] Team Tasks filter by Status / Team Member / Project
+- [x] Removed Completed from team tasks view
+
+---
+
+## Pending/Future Tasks
+
+### P1 - High Priority
+- [ ] Email Notifications (Gmail/Resend integration - playbook ready)
+- [ ] Google Calendar Integration (playbook ready)
+- [ ] Backend monolith refactoring (server.py is 3700+ lines)
+
+### P2 - Medium Priority
+- [ ] Google Drive full integration (currently demo mode)
+- [ ] Zoho Sign full integration (currently demo mode)
+- [ ] Task drag-and-drop for hierarchy
+- [ ] Task dependencies
+- [ ] Activity logs per task
+
+### P3 - Low Priority / Future
+- [ ] Native mobile app (especially for time tracking)
+- [ ] Frontend logic refactoring (extract into hooks)
+- [ ] Advanced reporting/analytics
