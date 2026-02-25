@@ -427,24 +427,42 @@ export const ProposalDetailPage = () => {
               {(proposal.final_proposal || canEdit) && (
                 <div>
                   <h3 className="text-lg font-heading font-semibold mb-2">Final Proposal</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{proposal.final_proposal}</p>
+                  <InlineEditField field="final_proposal" value={proposal.final_proposal} multiline />
                 </div>
               )}
               <div>
                 <h3 className="text-lg font-heading font-semibold mb-2">Description</h3>
-                <p className="text-muted-foreground">{proposal.description}</p>
+                <InlineEditField field="description" value={proposal.description} multiline />
               </div>
             </Card>
 
             <div className="space-y-6">
               <Card className="p-6">
                 <h3 className="text-lg font-heading font-semibold mb-4">Details</h3>
-                {proposal.amount && (
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="text-2xl font-heading font-bold">${proposal.amount.toLocaleString()}</p>
-                  </div>
-                )}
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">Amount</p>
+                  {editingField === 'amount' ? (
+                    <div className="flex gap-2 items-center mt-1">
+                      <Input
+                        type="number"
+                        value={fieldValue}
+                        onChange={(e) => setFieldValue(e.target.value)}
+                        className="w-32"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={() => handleInlineEdit('amount', parseFloat(fieldValue))}><Check className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}><X className="h-4 w-4" /></Button>
+                    </div>
+                  ) : (
+                    <p 
+                      className={`text-2xl font-heading font-bold ${canEdit ? 'cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1' : ''}`}
+                      onClick={() => canEdit && startInlineEdit('amount', proposal.amount || '')}
+                    >
+                      {proposal.amount ? `$${proposal.amount.toLocaleString()}` : <span className="text-muted-foreground text-base">Click to add</span>}
+                      {canEdit && <Edit className="h-3 w-3 text-muted-foreground inline ml-2 opacity-50" />}
+                    </p>
+                  )}
+                </div>
                 {proposal.approver_comments && (
                   <div className="mt-4 p-3 bg-muted rounded">
                     <p className="text-sm font-medium mb-1">Approver Comments</p>
