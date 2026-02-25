@@ -1893,8 +1893,11 @@ async def get_companies(session_token: Optional[str] = Cookie(None), authorizati
     
     companies = await db.companies.find({}, {"_id": 0}).to_list(1000)
     for company in companies:
-        if isinstance(company['created_at'], str):
-            company['created_at'] = datetime.fromisoformat(company['created_at'])
+        if company.get('created_at'):
+            if isinstance(company['created_at'], str):
+                company['created_at'] = datetime.fromisoformat(company['created_at'])
+        else:
+            company['created_at'] = datetime.now(timezone.utc)
     return companies
 
 @api_router.get("/companies/{company_id}", response_model=Company)
@@ -1905,8 +1908,11 @@ async def get_company(company_id: str, session_token: Optional[str] = Cookie(Non
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     
-    if isinstance(company['created_at'], str):
-        company['created_at'] = datetime.fromisoformat(company['created_at'])
+    if company.get('created_at'):
+        if isinstance(company['created_at'], str):
+            company['created_at'] = datetime.fromisoformat(company['created_at'])
+    else:
+        company['created_at'] = datetime.now(timezone.utc)
     return Company(**company)
 
 @api_router.patch("/companies/{company_id}")
