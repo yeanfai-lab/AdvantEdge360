@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Plus, FileText, Check, HardDrive, Send, Eye, ChevronRight } from 'lucide-react';
+import { Plus, FileText, Check, HardDrive, Send, Eye, ChevronRight, LayoutGrid, List, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 const categories = [
@@ -24,6 +24,9 @@ export const ProposalsPage = () => {
   const navigate = useNavigate();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('proposalsViewMode') || 'tile');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
@@ -40,6 +43,10 @@ export const ProposalsPage = () => {
     requirement: '',
     scope_area: ''
   });
+
+  useEffect(() => {
+    localStorage.setItem('proposalsViewMode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     if (searchParams.get('drive_connected') === 'true') {
