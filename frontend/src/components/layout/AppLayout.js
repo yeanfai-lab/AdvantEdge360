@@ -188,8 +188,8 @@ export const AppLayout = ({ children }) => {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-1 border-r bg-card">
-          <div className="flex flex-col items-center justify-center py-4 px-4 border-b bg-slate-900">
-            <img src="/logo.png" alt="AdvantEdge Advisory" className="h-12 w-auto" />
+          <div className="flex flex-col items-center justify-center py-5 px-4 border-b bg-white">
+            <img src="/logo.png" alt="AdvantEdge Advisory" className="h-16 w-auto" />
           </div>
           <nav className="flex-1 p-4 space-y-2">
             {navigation.map((item) => renderNavItem(item, false))}
