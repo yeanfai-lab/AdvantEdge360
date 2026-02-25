@@ -193,6 +193,94 @@ export const FinancePage = () => {
     setEditingFeeItem(null);
   };
 
+  // Bulk actions for Fee Structure
+  const handleBulkStatusUpdate = async (field, value) => {
+    if (selectedFeeItems.length === 0) {
+      toast.error('No items selected');
+      return;
+    }
+    
+    try {
+      await Promise.all(selectedFeeItems.map(itemId => 
+        axios.patch(`${API_URL}/fee-structure/${itemId}`, { [field]: value }, { withCredentials: true })
+      ));
+      toast.success(`Updated ${selectedFeeItems.length} items`);
+      setSelectedFeeItems([]);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update items');
+    }
+  };
+
+  const handleSelectAllFeeItems = () => {
+    if (selectedFeeItems.length === filteredFeeStructure.length) {
+      setSelectedFeeItems([]);
+    } else {
+      setSelectedFeeItems(filteredFeeStructure.map(f => f.item_id));
+    }
+  };
+
+  const handleToggleFeeItem = (itemId) => {
+    setSelectedFeeItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  // Bulk entry for Fee Structure
+  const handleBulkEntrySubmit = async () => {
+    if (!selectedProjectId) {
+      toast.error('Please select a project first');
+      return;
+    }
+    
+    const lines = bulkEntryText.trim().split('\n').filter(line => line.trim());
+    if (lines.length === 0) {
+      toast.error('No entries to add');
+      return;
+    }
+
+    const projectValue = getProjectValue(selectedProjectId);
+    const entries = [];
+    
+    for (const line of lines) {
+      // Expected format: Stage | Deliverable | Percentage | Billing Date (optional)
+      const parts = line.split('|').map(p => p.trim());
+      if (parts.length >= 3) {
+        const percentage = parseFloat(parts[2]) || 0;
+        entries.push({
+          project_id: selectedProjectId,
+          stage: parts[0],
+          deliverable: parts[1],
+          percentage: percentage,
+          amount: (percentage / 100) * projectValue,
+          tentative_billing_date: parts[3] || null,
+          deliverable_status: 'not_started',
+          invoice_status: 'not_invoiced',
+          payment_status: 'pending'
+        });
+      }
+    }
+    
+    if (entries.length === 0) {
+      toast.error('Invalid format. Use: Stage | Deliverable | Percentage | Date (optional)');
+      return;
+    }
+    
+    try {
+      await Promise.all(entries.map(entry => 
+        axios.post(`${API_URL}/fee-structure`, entry, { withCredentials: true })
+      ));
+      toast.success(`Added ${entries.length} items`);
+      setIsBulkEntryDialog(false);
+      setBulkEntryText('');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to add entries');
+    }
+  };
+
   // Team Salary handlers
   const handleSalarySubmit = async (e) => {
     e.preventDefault();
