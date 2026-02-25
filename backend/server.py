@@ -1400,17 +1400,18 @@ async def get_team_tasks(session_token: Optional[str] = Cookie(None), authorizat
     for member in team_members:
         tasks = await db.tasks.find({
             "assigned_to": member["user_id"],
-            "status": {"$ne": "not_started"}
+            "status": {"$nin": ["not_started", "completed"]}  # Exclude not_started and completed
         }, {"_id": 0}).to_list(1000)
         
         for task in tasks:
             if isinstance(task.get('created_at'), str):
                 task['created_at'] = datetime.fromisoformat(task['created_at'])
         
-        team_tasks.append({
-            "user": member,
-            "tasks": tasks
-        })
+        if tasks:  # Only include members with tasks
+            team_tasks.append({
+                "user": member,
+                "tasks": tasks
+            })
     
     return team_tasks
 
