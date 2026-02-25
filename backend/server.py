@@ -802,6 +802,40 @@ async def update_task(task_id: str, updates: dict, session_token: Optional[str] 
     
     return {"message": "Task updated"}
 
+@api_router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Delete all subtasks (cascading delete)
+    if task.get("subtasks"):
+        await db.tasks.delete_many({"task_id": {"$in": task["subtasks"]}})
+    
+    # Remove from parent task's subtasks array if this is a subtask
+    if task.get("parent_task_id"):
+        await db.tasks.update_one(
+            {"task_id": task["parent_task_id"]},
+            {"$pull": {"subtasks": task_id}}
+        )
+    
+    # Delete time logs associated with this task
+    await db.time_logs.delete_many({"task_id": task_id})
+    
+    # Cancel any active timer for this task
+    await db.active_timers.delete_many({"task_id": task_id})
+    
+    # Delete the task
+    await db.tasks.delete_one({"task_id": task_id})
+    
+    # Update project completion
+    if task.get("project_id"):
+        await update_project_completion(task["project_id"])
+    
+    return {"message": "Task deleted"}
+
 @api_router.get("/tasks/{task_id}")
 async def get_task_detail(task_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
