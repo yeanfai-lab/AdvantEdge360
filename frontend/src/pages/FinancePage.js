@@ -716,7 +716,7 @@ export const FinancePage = () => {
               <Target className="h-5 w-5" /> Project Profitability
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Read-only view derived from Fee Structure and Labor Costs
+              Read-only view derived from Fee Structure, Labor Costs, and Project Reimbursements
             </p>
             {projects.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No projects to analyze</p>
@@ -730,6 +730,7 @@ export const FinancePage = () => {
                     <TableHead className="text-right">Received</TableHead>
                     <TableHead className="text-right">Pending</TableHead>
                     <TableHead className="text-right">Labor Cost</TableHead>
+                    <TableHead className="text-right">Reimbursements</TableHead>
                     <TableHead className="text-right">Billable Hours</TableHead>
                     <TableHead className="text-right">Profit</TableHead>
                   </TableRow>
@@ -743,6 +744,7 @@ export const FinancePage = () => {
                       <TableCell className="text-right text-green-600">{formatCurrency(p.paidIncome)}</TableCell>
                       <TableCell className="text-right text-amber-600">{formatCurrency(p.pendingIncome)}</TableCell>
                       <TableCell className="text-right text-orange-600">{formatCurrency(p.laborCost)}</TableCell>
+                      <TableCell className="text-right text-orange-600">{formatCurrency(p.reimbursementExpenses || 0)}</TableCell>
                       <TableCell className="text-right">{p.totalBillableHours.toFixed(1)}h</TableCell>
                       <TableCell className={`text-right font-semibold ${p.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(Math.abs(p.profit))}
