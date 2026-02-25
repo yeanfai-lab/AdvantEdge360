@@ -1803,7 +1803,10 @@ class Company(BaseModel):
     industry: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
+    business_address: Optional[str] = None
     phone: Optional[str] = None
+    gst_number: Optional[str] = None
+    pan_number: Optional[str] = None
     custom_fields: dict = {}
     status: str = "active"
     created_by: str
@@ -1814,7 +1817,10 @@ class CompanyCreate(BaseModel):
     industry: Optional[str] = None
     website: Optional[str] = None
     address: Optional[str] = None
+    business_address: Optional[str] = None
     phone: Optional[str] = None
+    gst_number: Optional[str] = None
+    pan_number: Optional[str] = None
     custom_fields: dict = {}
 
 class Client(BaseModel):
@@ -1827,6 +1833,9 @@ class Client(BaseModel):
     company_id: Optional[str] = None
     company_name: Optional[str] = None
     address: Optional[str] = None
+    business_address: Optional[str] = None
+    gst_number: Optional[str] = None
+    pan_number: Optional[str] = None
     status: str = "active"
     custom_fields: dict = {}
     notes: Optional[str] = None
@@ -1840,6 +1849,9 @@ class ClientCreate(BaseModel):
     position: Optional[str] = None
     company_id: Optional[str] = None
     address: Optional[str] = None
+    business_address: Optional[str] = None
+    gst_number: Optional[str] = None
+    pan_number: Optional[str] = None
     custom_fields: dict = {}
     notes: Optional[str] = None
 
