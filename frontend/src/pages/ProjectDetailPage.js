@@ -1196,12 +1196,12 @@ export const ProjectDetailPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Assign To</label>
-                <Select value={editTaskForm.assigned_to || ''} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, assigned_to: value })}>
+                <Select value={editTaskForm.assigned_to || '__none__'} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, assigned_to: value === '__none__' ? '' : value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="__none__">Unassigned</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>{member.name}</SelectItem>
                     ))}
@@ -1210,12 +1210,12 @@ export const ProjectDetailPage = () => {
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Reviewer</label>
-                <Select value={editTaskForm.reviewer_id || ''} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, reviewer_id: value })}>
+                <Select value={editTaskForm.reviewer_id || '__none__'} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, reviewer_id: value === '__none__' ? '' : value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="No reviewer" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No reviewer</SelectItem>
+                    <SelectItem value="__none__">No reviewer</SelectItem>
                     {teamMembers.filter(m => ['admin', 'manager', 'team_lead'].includes(m.role)).map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>{member.name} ({member.role})</SelectItem>
                     ))}
