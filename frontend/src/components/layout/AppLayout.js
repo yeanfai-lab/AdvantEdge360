@@ -46,6 +46,7 @@ const navigation = [
 
 export const AppLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState(['Team']);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,6 +54,98 @@ export const AppLayout = ({ children }) => {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const toggleMenu = (menuName) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuName) 
+        ? prev.filter(m => m !== menuName)
+        : [...prev, menuName]
+    );
+  };
+
+  const isChildActive = (item) => {
+    if (!item.children) return false;
+    return item.children.some(child => location.pathname === child.href);
+  };
+
+  const renderNavItem = (item, isMobile = false) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedMenus.includes(item.name);
+    const isActive = item.href ? location.pathname === item.href : isChildActive(item);
+
+    if (hasChildren) {
+      return (
+        <div key={item.name}>
+          <button
+            onClick={() => toggleMenu(item.name)}
+            className={cn(
+              'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+            data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className="h-5 w-5" />
+              {item.name}
+            </div>
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+          {isExpanded && (
+            <div className="ml-4 mt-1 space-y-1">
+              {item.children.map((child) => {
+                const childActive = location.pathname === child.href;
+                return (
+                  <button
+                    key={child.name}
+                    onClick={() => {
+                      navigate(child.href);
+                      if (isMobile) setSidebarOpen(false);
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                      childActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                    data-testid={`nav-${child.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {child.icon && <child.icon className="h-4 w-4" />}
+                    {child.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <button
+        key={item.name}
+        onClick={() => {
+          navigate(item.href);
+          if (isMobile) setSidebarOpen(false);
+        }}
+        className={cn(
+          'w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
+          isActive
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        )}
+        data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+      >
+        <item.icon className="h-5 w-5" />
+        {item.name}
+      </button>
+    );
   };
 
   return (
@@ -84,28 +177,7 @@ export const AppLayout = ({ children }) => {
               </Button>
             </div>
             <nav className="flex-1 p-4 space-y-2">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      navigate(item.href);
-                      setSidebarOpen(false);
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    )}
-                    data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                  </button>
-                );
-              })}
+              {navigation.map((item) => renderNavItem(item, true))}
             </nav>
           </div>
         </div>
