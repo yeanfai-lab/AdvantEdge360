@@ -50,7 +50,7 @@ export const DashboardPage = () => {
   });
   
   const [taskForm, setTaskForm] = useState({
-    project_id: '', title: '', description: '', priority: 'medium'
+    project_id: '', is_internal: false, title: '', description: '', priority: 'medium'
   });
 
   const [pendingReviews, setPendingReviews] = useState([]);
