@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 const taskStatuses = [
   { id: 'not_started', label: 'Not Started', color: 'bg-muted' },
+  { id: 'assigned', label: 'Assigned', color: 'bg-cyan-500' },
   { id: 'in_progress', label: 'In Progress', color: 'bg-blue-500' },
   { id: 'on_hold', label: 'On Hold', color: 'bg-yellow-500' },
   { id: 'under_review', label: 'Under Review', color: 'bg-purple-500' },
