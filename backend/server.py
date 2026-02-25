@@ -1768,7 +1768,8 @@ async def get_available_roles(session_token: Optional[str] = Cookie(None), autho
             "level": config["level"],
             "description": config["description"],
             "can_view_financial": config["can_view_financial"],
-            "can_manage_team": config["can_manage_team"]
+            "can_manage_team": config["can_manage_team"],
+            "can_invite_team": config.get("can_invite_team", False)
         })
     
     return sorted(roles_list, key=lambda x: x["level"], reverse=True)
