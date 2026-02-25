@@ -163,6 +163,36 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/leave-reimbursement"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <LeaveReimbursementPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/performance-reviews"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <PerformanceReviewPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <OnboardingPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
       </Routes>
     </>
   );
