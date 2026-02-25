@@ -1604,11 +1604,69 @@ async def get_team_members(session_token: Optional[str] = Cookie(None), authoriz
 async def update_team_member(user_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
-    if user.role not in ["admin", "manager"]:
+    if user.role not in ["admin", "manager", "supervisor"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Supervisors can only update team members, not roles
+    if user.role == "supervisor" and "role" in updates:
+        raise HTTPException(status_code=403, detail="Supervisors cannot change roles")
     
     await db.users.update_one({"user_id": user_id}, {"$set": updates})
     return {"message": "Team member updated"}
+
+@api_router.get("/roles")
+async def get_available_roles(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Return roles list with descriptions
+    roles_list = []
+    for role_id, config in ROLES.items():
+        roles_list.append({
+            "id": role_id,
+            "level": config["level"],
+            "description": config["description"],
+            "can_view_financial": config["can_view_financial"],
+            "can_manage_team": config["can_manage_team"]
+        })
+    
+    return sorted(roles_list, key=lambda x: x["level"], reverse=True)
+
+@api_router.get("/user/permissions")
+async def get_user_permissions(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    role_config = ROLES.get(user.role, ROLES["team_member"])
+    
+    return {
+        "role": user.role,
+        "level": role_config["level"],
+        "description": role_config["description"],
+        "permissions": {
+            "can_view_financial": role_config["can_view_financial"],
+            "can_manage_team": role_config["can_manage_team"],
+            "can_edit_all": role_config["can_edit_all"],
+            "can_delete_all": role_config["can_delete_all"]
+        }
+    }
+
+@api_router.delete("/team/{user_id}")
+async def delete_team_member(user_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can delete team members")
+    
+    if user_id == user.user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.users.delete_one({"user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Also delete their sessions
+    await db.user_sessions.delete_many({"user_id": user_id})
+    
+    return {"message": "Team member deleted"}
 
 
 # ========== CLIENT MANAGEMENT MODELS & ROUTES ==========
