@@ -7,85 +7,61 @@ The user wants to build a comprehensive, full-stack business operations and proj
 The application must include the following core modules:
 1.  **Client Management:** Onboarding, profiles, contact logs, project lists, and status tracking. The system should support a company/contact hierarchy. The module should be the central hub, linking to projects, invoices, costs, and reports for each client.
 2.  **Proposal & Project Management:**
-    *   **Proposals:** Creation, versioning, and an approval workflow. It should integrate with Google Drive to attach documents and Zoho Sign for digital signatures. Proposals should be convertible into projects. Key fields include requirement, area, final proposal, and categorization (e.g., Residential, Commercial). A full approval cycle is required: Sender -> Internal Approver -> Client.
-    *   **Projects:** Scoping (milestones, deliverables), health indicators, and status tracking.
-3.  **Task & Sub-Task Management:** These should be integrated directly within each project view. Features include assignments, priority, due dates, attachments, a review/approval cycle with comments, and status tracking (, , , , ). Project completion should be calculated as a percentage based on task statuses.
+    *   **Proposals:** Creation, versioning, CRUD, an approval workflow, and a toggle between list and tile views. It should integrate with Google Drive to attach documents and Zoho Sign for digital signatures. Proposals should be convertible into projects. Key fields include requirement, area, final proposal, and categorization (e.g., Residential, Commercial). A full approval cycle is required: Sender -> Internal Approver -> Client.
+    *   **Projects:** Scoping (milestones, deliverables), health indicators, status tracking, and CRUD.
+3.  **Task & Sub-Task Management:** Integrated within projects, with a separate filterable master list. Features include assignments, priority, due dates, attachments, a review/approval cycle with comments, CRUD, and status tracking (, , , , ). Sub-tasks should be nestable.
 4.  **Team Onboarding & Management:** Role-based access control (RBAC) and user management.
-5.  **Time Tracking & Productivity:** Task-level time logging and reporting. Must be mobile-responsive.
+5.  **Time Tracking & Productivity:** Task-level time logging with a start/stop timer, billable/non-billable options, and a global timer ribbon. Must be mobile-responsive.
 6.  **Finance Management:** Project budgets, cost tracking, client billing, and expense logging.
-7.  **Reports & MIS:** Generate and export (CSV/PDF) reports on project performance, team productivity, and financial summaries.
-8.  **Dashboard:**
-    *   Display clickable high-level statistics.
-    *   Include functional Quick Action buttons.
-    *   An individual user's dashboard should show all their assigned tasks.
-    *   A manager's dashboard should feature a Kanban board of all team members' open tasks.
-9.  **Integrations:**
-    *   **Google Drive:** For attaching proposal documents.
-    *   **Gmail:** For sending email notifications (e.g., task assignments, invoice reminders).
-    *   **Zoho Sign:** For electronic signatures on proposals.
+7.  **Reports & MIS:** Generate and export (CSV/PDF) reports.
+8.  **Dashboard:** Display clickable stats, quick actions, a user's My Tasks list, a manager's Kanban board, and a list of tasks pending review/approval.
+9.  **Integrations:** Google Drive, Gmail, and Zoho Sign.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application (React frontend, FastAPI backend, MongoDB) named AdvantEdge360 has been developed. The application includes foundational UI and backend logic for all core modules (Dashboard, Clients, Proposals, Projects, Tasks, Team, Time, Finance, Reports). User authentication via Google Social Login is implemented. The UI has a custom teal and dark grey theme with the PT Sans Narrow font. Recent enhancements include a company/contact hierarchy in client management and clickable dashboard stats. Integrations for Google Drive, Gmail, and Zoho Sign are present in a non-functional demo mode as requested by the user.
+A full-stack application with a React frontend, FastAPI backend, and MongoDB. All core modules from the PRD have a functional UI and backend. Recent work has significantly enhanced the application by adding proposal versioning, sub-tasks, full CRUD on all major entities (proposals, projects, tasks), a global time tracker ribbon, inline editing, and list/tile view toggles. Integrations for Google Drive, Gmail, and Zoho Sign remain in a non-functional demo mode as per user instructions.
 
 **Last working item**:
-*   **Last item agent was working**: The agent was in the middle of a major overhaul of the Proposal and Project management modules based on a large set of new requirements from the user. Specifically, it started creating the frontend component  after updating the backend models and routes in  to accommodate the complex new workflows for proposals and tasks.
-*   **Status**: IN PROGRESS
-*   **Agent Testing Done**: N
-*   **Which testing method agent to use?**: both
+*   **Last item agent was working**: The agent just completed a large batch of features based on the user's request (message #226), including full CRUD for core entities, a global timer ribbon, a dedicated filterable tasks page, and an enhanced dashboard with a pending reviews section.
+*   **Status**: USER VERIFICATION PENDING
+*   **Agent Testing Done**: Y
+*   **Which testing method agent to use?**: both (The testing agent should be used after the next batch of features is implemented).
 *   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Complete the Proposal & Project Management Overhaul (P0)**: This is the highest priority and is currently in progress. It encompasses a complete refactor of how proposals and projects are managed.
-
-    **Issues Detail**:
-    *   **Issue 1: Complete the Proposal & Project Management Overhaul**
-        *   **Attempted fixes**: The agent has already updated the backend models and routes in  and started creating the new  frontend component.
-        *   **Next debug checklist**:
-            1.  **Finish **: Implement the full UI for viewing, editing, and managing a single proposal, including the new fields (, , ), document attachment sections (PDF/Google Drive), and the approval workflow controls.
-            2.  **Merge Project/Task Views**: Refactor the frontend to combine the Projects and Tasks pages. The new view should list projects, and clicking one should expand to show its integrated task list with all required features (comments, statuses, dates, reviewer cycle).
-            3.  **Implement Project Completion Logic**: Ensure the backend calculates and the frontend displays the project completion percentage based on task statuses.
-            4.  **Update Dashboard**: Modify  to add the My Tasks section for individual users and the manager's Kanban board view of team tasks.
-            5.  **Refactor **: Update the main proposals list to make each item a link to its  and to allow for creation of new, enhanced proposals.
-        *   **Why fix this issue and what will be achieved with the fix?**: This will implement the core workflow requested by the user, transforming the application from a basic data store into an interactive and integrated management tool.
-        *   **Status**: IN PROGRESS
-        *   **Is recurring issue?**: N
-        *   **Should Test frontend/backend/both after fix?**: both
-        *   **Blocked on other issue**: None
+There are no outstanding bugs or in-progress issues. The last set of features was implemented and tested successfully by the agent.
 
 **In progress Task List**:
-*   **Task 1: Implement the enhanced Proposal and Project/Task management system (P0)**
-    *   **Where to resume**: Continue development of the file .
-    *   **What will be achieved with this?**: A fully functional, integrated proposal and project management system that meets the user's detailed specifications.
-    *   **Status**: IN PROGRESS
-    *   **Should Test frontend/backend/both after fix?**: both
-    *   **Blocked on something**: None
+*   **Task 1: User Verification of Newly Implemented Features (P0)**
+    *   **Where to resume**: The user needs to test and verify the recently added features: CRUD on proposals/projects/tasks, the global timer, billable flags, sub-tasks, and the enhanced dashboard.
+    *   **What will be achieved with this?**: Confirmation that the latest development cycle meets user expectations, allowing progress to the next set of tasks.
+    *   **Status**: USER VERIFICATION PENDING
+    *   **Should Test frontend/backend/both after fix?**: N/A
+    *   **Blocked on something**: User feedback.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0: Complete Google Drive file picker UI in Proposals page**: Implement the Attach from Drive dialog and file selection logic.
-    *   **P0: Implement proposal sending workflow**: Connect the UI to the backend for the full approval cycle (sender -> approver -> client).
+    *   **P0: Activate 3rd-Party Integrations**: Move Google Drive, Gmail, and Zoho Sign from demo mode to full functionality. This will require collecting API keys from the user.
 *   **Future Tasks:**
-    *   **P1: Activate Zoho Sign Integration**: Move from demo mode to full API integration for electronic signatures, using user-provided credentials.
-    *   **P1: Activate Gmail Notifications**: Implement real email sending for task assignments and reminders using the Gmail API and user credentials.
-    *   **P2: Implement PDF Export**: Add PDF export functionality for reports, in addition to the existing CSV export.
-    *   **P2: Native Mobile App**: Consider developing a native mobile app for on-the-go time tracking, as the user initially requested a mobile app version.
+    *   **P1: Refactor Backend Monolith**: Break down the single  file into a modular structure (e.g., , , ) to improve maintainability.
+    *   **P1: Implement PDF Export**: Add PDF export functionality for reports.
+    *   **P2: Refactor Frontend Logic**: Extract complex state management and API logic from page components into custom hooks (e.g., , ).
+    *   **P2: Native Mobile App**: Plan and potentially develop a native mobile app, especially for time tracking.
 
 **Completed work in this session**
-*   Initial application scaffolding for AdvantEdge360 (React/FastAPI/MongoDB).
-*   Implemented Google Social Login for user authentication.
-*   Created UI and backend routes for all core modules (Clients, Proposals, Projects, etc.).
-*   Applied a custom teal/dark grey theme and PT Sans Narrow font ().
-*   Refactored Client Management to support a Company/Contact hierarchy (, ).
-*   Made dashboard stats clickable and quick actions functional ().
-*   Reordered sidebar navigation ().
-*   Implemented CSV export for reports ().
-*   Made the time tracking page mobile-responsive ().
-*   Fixed multiple bugs, including incorrect API endpoint signatures and frontend rendering errors.
+*   **Proposal & Project Overhaul**: Completed the major refactor, linking list pages to detail pages.
+*   **Full CRUD Functionality**: Implemented Create, Read, Update, and Delete for proposals, projects, and tasks (including cascading deletes for sub-tasks).
+*   **Proposal Versioning**: Added a system to track and view different versions of a proposal.
+*   **Sub-Task Implementation**: Added support for nested sub-tasks within parent tasks.
+*   **Enhanced Task Management**: Implemented an enhanced review cycle, comment editing/deleting, and a dedicated filterable  page.
+*   **Global Time Tracker**: Created a persistent timer ribbon that appears across all pages, showing the active task timer. Added a billable/non-billable option.
+*   **UI Enhancements**: Added a toggle for Tile vs. List views on Proposals and Projects pages and implemented inline editing for key fields.
+*   **Dashboard Updates**: Added Pending Reviews and Pending Approvals sections for managers.
+*   **Bug Fixes**: Successfully ran the testing agent twice, which identified and fixed bugs related to proposal creation, UI crashes, and conditional hook rendering.
 
 **Earlier issues found/mentioned but not fixed**
-None. The agent has been diligent in addressing user requests. The only unfixed items are integrations intentionally left in demo mode per the user's instructions.
+None.
 
 **Known issue recurrence from previous fork**
 N/A
@@ -104,75 +80,73 @@ N/A
 *   **Company**: 
 *   **ContactPerson**: 
 *   **Proposal**: 
+*   **ProposalVersion**:  **(New)**
 *   **Project**: 
-*   **Task**: 
+*   **Task**:  **(Updated)**
+*   **SubTask**: Inherits from Task model, linked via .
 *   **User**: 
+*   **TimeLog**:  **(New)**
+*   **ActiveTimer**:  **(New)**
 
 **changes in tech stack**
-*   Added Python libraries for Google APIs: , , .
+None in this session.
 
 **All files of reference**
-*   : The single source of truth for all backend logic. Has been significantly modified to add new models and routes for the enhanced client, proposal, and task management.
-*   : Contains all frontend routing, including the new client detail route.
-*   : Sidebar navigation was updated here.
-*   : Updated for clickable stats and needs further updates for user/manager task views.
-*   : Overhauled to support the company/contact hierarchy.
-*   : Needs a major rewrite to support the new proposal workflow.
-*   : **Currently being created**. This is the key file for the new proposal workflow.
-*   , : These need to be merged into a single integrated view.
+*   : Heavily modified to add CRUD endpoints, versioning, sub-tasks, time tracking, and cascading deletes.
+*   : Updated to include the .
+*   , : Updated with view toggles and list views.
+*   , : Updated with CRUD actions, inline editing, versioning (proposals), and sub-task management (projects).
+*   : Rewritten to be a standalone, full-featured task management page with filters and CRUD.
+*   : Updated to show tasks pending review.
+*   : New file for the persistent timer UI.
 
 **Areas that need refactoring**
-*   **Backend Monolith**: The  file is over 1000 lines long and contains all models, routes, and business logic. It should be broken down into a modular structure (e.g., , ) to improve maintainability.
-*   **Frontend Logic**: Many frontend page components (, ) contain complex state management and API fetching logic. This logic should be extracted into custom hooks (e.g., , ) to make components cleaner and more reusable.
+*   **Backend Monolith**: The  file is now extremely large and complex. It is a high-priority candidate for refactoring into a modular structure (routes, models, services) to ensure future scalability and maintainability.
+*   **Frontend Logic**: Many page components now contain significant state management, data fetching, and event handling logic. This should be extracted into custom hooks to simplify the components.
 
 **key api endpoints**
-*   : Initiates Google login.
-*   , : New endpoints for client management.
-*   : Existing endpoints need to be augmented with approval workflow logic (e.g., , ).
-*   : Needs new endpoints for the review cycle (e.g., , ).
-*   : New endpoint to get project completion status.
-*   : Endpoint for CSV export.
+*   **CRUD Endpoints**:  endpoints added for , , and .  endpoints were enhanced for inline editing.
+*   **Versioning**: 
+*   **Sub-tasks**: 
+*   **Time Tracking**: , ,  (all enhanced).
+*   **Dashboard**:  (response updated to include tasks pending review).
 
 **Critical Info for New Agent**
-*   You are in the middle of a large-scale refactor of the proposal and project management systems. Your immediate priority is to complete the work started by the previous agent.
-*   **Resume work on **. This is the central piece of the new proposal workflow.
-*   All third-party integrations (Zoho, Gmail, Google Drive) are in a **demo mode** by user request. The backend routes exist but likely do not perform real API calls. Do not attempt to make them fully functional until the user provides API keys and gives the go-ahead.
-*   The backend file  is extremely large. While your priority is feature implementation, be aware of this technical debt. Refactoring it should be considered a future task.
-*   Refer to the user message #231 for the complete list of requirements for the current overhaul. All items in that message must be implemented.
+*   The previous agent completed a very large set of feature requests, all of which passed automated testing. Your first step should be to confirm these changes with the user.
+*   The most significant technical debt is the monolithic  file. Any future backend work will be slowed by its complexity. Proposing a refactor of the backend should be a priority after the current work is validated.
+*   All third-party integrations (Zoho, Gmail, Google Drive) are still in **demo mode**. The user has indicated they will provide API keys later. Activating these is the next major functional task once the user gives the go-ahead.
 
 **documents and test reports created in this job**
+*    (created and updated)
 *   
 *   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User Message #231**: A very detailed request to overhaul the proposal and project/task management systems. This is the current work-in-progress. (STATUS: IN PROGRESS)
-2.  **User Message #224**: 
-3.  **User Message #207**: Request to make dashboard stats clickable, make quick actions functional, reorder the sidebar, and enhance client management with a company/contact hierarchy and custom fields. (STATUS: COMPLETED)
-4.  **User Message #182**: Provided instructions for integrations: use setup instructions for Zoho, Gmail API is fine, responsive web app for mobile, CSV for reports, and proceed in demo mode for now. (STATUS: COMPLETED)
-5.  **User Message #179**: Requested several new features: Zoho Sign integration, email notifications, report exports, a mobile app version, and completion of the Google Drive UI in the proposals page. (STATUS: PARTIALLY COMPLETED, now superseded by #231)
-6.  **User Message #150**: Requested deeper integration for the client management module, including linking to all other modules and syncing with Gmail and Google Drive. (STATUS: COMPLETED)
-7.  **User Message #125**: Requested a color scheme change to teal/dark grey and font change to PT Sans Narrow, and to proceed with building all modules. (STATUS: COMPLETED)
-8.  **User Message #54**: 
-9.  **User Message #5**: Initial preferences: social login, modern/minimal style, auto-detect theme, Zoho Sign for signatures, and prioritizing Project/Proposal/Task management. (STATUS: COMPLETED)
+1.  **User Message #269**: Confirmed proceeding with the agent's plan. (STATUS: COMPLETED)
+2.  **User Message #268**: Confirmed proceeding with the implementation plan. (STATUS: COMPLETED)
+3.  **User Message #229**: Confirmed that sub-tasks should be deleted when a parent task is deleted. (STATUS: IMPLEMENTED)
+4.  **User Message #226**: A very detailed request for new features, which became the main work of the session: full CRUD, editable fields, enhanced tasks page, task filtering, manager review lists, proposal action dropdowns, and a global time tracker with billable options. (STATUS: IMPLEMENTED)
+5.  **User Message #109**: Clarified that cloud integration can be done later and provided specifics on how the time tracker should work for multiple users. (STATUS: IMPLEMENTED)
+6.  **User Message #105**: A detailed request for proposal versioning, editable fields, list/tile views, sub-tasks with a review cycle, and an integrated time tracker. (STATUS: IMPLEMENTED)
 
 **Project Health Check:**
-*   **Broken**: The core features of Proposal and Project/Task management are currently broken and non-functional due to the ongoing major refactoring.
-*   **Mocked**: Zoho Sign, Gmail, and Google Drive integrations are implemented as non-functional placeholders (demo mode).
+*   **Broken**: None. All features were tested by the agent and passed.
+*   **Mocked**: Zoho Sign, Gmail, and Google Drive integrations remain non-functional placeholders.
 
 **3rd Party Integrations**
 *   **Emergent-managed Google Auth**: Used for user login.
-*   **Google Drive API**: Playbook received. Requires user-provided key. Partially implemented for proposal attachments.
-*   **Gmail API**: Playbook received. Requires user-provided key. Implemented in demo mode for notifications.
-*   **Zoho Sign API**: Playbook requested. Requires user-provided key. Implemented in demo mode for proposal signatures.
+*   **Google Drive API**: Playbook received. In demo mode.
+*   **Gmail API**: Playbook received. In demo mode.
+*   **Zoho Sign API**: Playbook requested. In demo mode.
 
 **Testing status**
-*   **Testing agent used after significant changes**: YES (once, before the latest refactor)
+*   **Testing agent used after significant changes**: YES (twice in the last session).
 *   **Troubleshoot agent used after agent stuck in loop**: NO
-*   **Test files created**: None
-*   **Known regressions**: The proposal and project management features are entirely regressed due to the ongoing refactor.
+*   **Test files created**: None.
+*   **Known regressions**: None.
 
 **Credentials to test flow:**
-Use the Google Social Login flow. Since it is managed, no credentials are required from the user to test the basic login.
+Use the Google Social Login flow. No credentials are required.
 
 **What agent forgot to execute**
-The agent has not forgotten any tasks but was interrupted mid-way through a very large and complex implementation. The remaining parts of the user's request from message #231 are the immediate pending tasks.</analysis>
+The agent successfully executed all direct requests from the user in this session. The only remaining work consists of previously deferred tasks (like activating integrations) and addressing growing technical debt.</analysis>
