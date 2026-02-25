@@ -17,16 +17,14 @@ const roleColors = {
   admin: 'bg-red-500/20 text-red-600 border-red-500/30',
   manager: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
   team_lead: 'bg-purple-500/20 text-purple-600 border-purple-500/30',
-  team_member: 'bg-slate-500/20 text-slate-600 border-slate-500/30',
-  finance: 'bg-green-500/20 text-green-600 border-green-500/30'
+  team_member: 'bg-slate-500/20 text-slate-600 border-slate-500/30'
 };
 
 const roleDescriptions = {
   admin: 'Full access to all features including financials',
   manager: 'Project management with financial access',
   team_lead: 'Team coordination and management',
-  team_member: 'Own tasks only',
-  finance: 'Financial data access only'
+  team_member: 'Own tasks only'
 };
 
 export const TeamPage = () => {
