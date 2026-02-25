@@ -157,6 +157,27 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [x] Expense CRUD (edit/delete)
 - [x] Expense categories (Travel, Equipment, Office Supplies, Client Entertainment, Software, Utilities, Other)
 
+### December 2025 - V6 Enhancements (Phase 2: Team Management)
+- [x] Leave Applications CRUD + Approval workflow
+  - Leave types: Casual, Sick, Earned/Annual, Unpaid, Work from Home
+  - Supervisor/Manager can approve/reject with comments
+  - Team members see only their own leaves
+- [x] Reimbursements CRUD + Approval workflow
+  - Categories: Travel, Equipment, Office Supplies, Client Entertainment, Other
+  - Status: pending → approved → paid
+  - Finance role can mark as paid
+- [x] Performance Reviews CRUD
+  - Supervisor creates reviews with 1-5 star rating
+  - Reviewer submits, reviewed person acknowledges
+  - Includes strengths, areas for improvement, goals
+- [x] Onboarding Forms
+  - Personal info, emergency contact, bank details
+  - Education history (dynamic list)
+  - Work experience history (dynamic list)
+  - Submit for approval workflow
+- [x] Team Requests Summary API
+  - GET /api/team-requests/pending returns all pending requests
+
 ### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
 - [x] ProposalDetailPage with full CRUD and approval controls
