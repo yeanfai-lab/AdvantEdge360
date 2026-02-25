@@ -232,13 +232,49 @@ export const ProposalDetailPage = () => {
     return <Card className="p-12 text-center"><p className="text-muted-foreground">Proposal not found</p></Card>;
   }
 
-  const isCreator = proposal.created_by === user.user_id;
-  const isApprover = proposal.approver_id === user.user_id;
+  const isCreator = proposal.created_by === user?.user_id;
+  const isApprover = proposal.approver_id === user?.user_id;
   const canEdit = isCreator && ['draft', 'returned'].includes(proposal.status);
   const canApprove = isApprover && proposal.status === 'pending_approval';
 
+  const InlineEditField = ({ field, value, label, multiline = false }) => {
+    if (editingField === field) {
+      return (
+        <div className="flex gap-2 items-start">
+          {multiline ? (
+            <Textarea
+              value={fieldValue}
+              onChange={(e) => setFieldValue(e.target.value)}
+              className="flex-1"
+              rows={3}
+              autoFocus
+            />
+          ) : (
+            <Input
+              value={fieldValue}
+              onChange={(e) => setFieldValue(e.target.value)}
+              className="flex-1"
+              autoFocus
+            />
+          )}
+          <Button size="sm" onClick={() => handleInlineEdit(field, fieldValue)}><Check className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}><X className="h-4 w-4" /></Button>
+        </div>
+      );
+    }
+    return (
+      <div 
+        className={`group ${canEdit ? 'cursor-pointer hover:bg-muted/50' : ''} p-2 -m-2 rounded`}
+        onClick={() => canEdit && startInlineEdit(field, value)}
+      >
+        <p className="text-sm">{value || <span className="text-muted-foreground italic">Click to add</span>}</p>
+        {canEdit && <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 inline ml-2" />}
+      </div>
+    );
+  };
+
   return (
-    <div>
+    <div data-testid="proposal-detail-page">
       <div className="mb-6">
         <Button variant="ghost" onClick={() => navigate('/proposals')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -246,10 +282,17 @@ export const ProposalDetailPage = () => {
         </Button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-heading font-bold tracking-tight mb-2">{proposal.title}</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-4xl font-heading font-bold tracking-tight">{proposal.title}</h1>
+              <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">v{proposal.version || 1}</span>
+            </div>
             <p className="text-lg text-muted-foreground">{proposal.client_name}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-start">
+            <Button variant="outline" size="sm" onClick={fetchVersionHistory}>
+              <History className="mr-2 h-4 w-4" />
+              History
+            </Button>
             <span className="px-3 py-1 text-sm font-semibold rounded-full bg-chart-2/20 text-chart-2">
               {proposal.status.replace('_', ' ').toUpperCase()}
             </span>
@@ -261,6 +304,54 @@ export const ProposalDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Version History Dialog */}
+      <Dialog open={isVersionHistoryOpen} onOpenChange={setIsVersionHistoryOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Version History</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">Current Version (v{proposal.version || 1})</span>
+                <span className="text-xs text-muted-foreground">Active</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{proposal.title}</p>
+            </div>
+            {versionHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">No previous versions</p>
+            ) : (
+              versionHistory.slice().reverse().map((version, index) => (
+                <div key={index} className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold">Version {version.version}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(version.saved_at).toLocaleString()}
+                      </span>
+                      <Button size="sm" variant="outline" onClick={() => handleRestoreVersion(version.version)}>
+                        <RotateCcw className="mr-1 h-3 w-3" />
+                        Restore
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium">{version.title}</p>
+                  {version.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{version.description}</p>
+                  )}
+                  {version.amount && (
+                    <p className="text-sm text-muted-foreground mt-1">Amount: ${version.amount.toLocaleString()}</p>
+                  )}
+                  {version.note && (
+                    <p className="text-xs text-yellow-600 mt-1">{version.note}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isEditing ? (
         <Card className="p-6 space-y-4">
@@ -325,19 +416,15 @@ export const ProposalDetailPage = () => {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <Card className="lg:col-span-2 p-6 space-y-6">
-              {proposal.requirement && (
-                <div>
-                  <h3 className="text-lg font-heading font-semibold mb-2">Requirement</h3>
-                  <p className="text-muted-foreground">{proposal.requirement}</p>
-                </div>
-              )}
-              {proposal.scope_area && (
-                <div>
-                  <h3 className="text-lg font-heading font-semibold mb-2">Scope/Area</h3>
-                  <p className="text-muted-foreground">{proposal.scope_area}</p>
-                </div>
-              )}
-              {proposal.final_proposal && (
+              <div>
+                <h3 className="text-lg font-heading font-semibold mb-2">Requirement</h3>
+                <InlineEditField field="requirement" value={proposal.requirement} multiline />
+              </div>
+              <div>
+                <h3 className="text-lg font-heading font-semibold mb-2">Scope/Area</h3>
+                <InlineEditField field="scope_area" value={proposal.scope_area} multiline />
+              </div>
+              {(proposal.final_proposal || canEdit) && (
                 <div>
                   <h3 className="text-lg font-heading font-semibold mb-2">Final Proposal</h3>
                   <p className="text-muted-foreground whitespace-pre-wrap">{proposal.final_proposal}</p>
