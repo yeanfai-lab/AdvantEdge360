@@ -417,9 +417,75 @@ export const ProposalsPage = () => {
           <h3 className="text-xl font-heading font-semibold mb-2">No proposals yet</h3>
           <p className="text-muted-foreground mb-6">Create your first proposal to get started</p>
         </Card>
+      ) : viewMode === 'list' ? (
+        /* List View */
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('title')}>
+                    <div className="flex items-center gap-2">Title <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('client_name')}>
+                    <div className="flex items-center gap-2">Client <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium">Category</th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('status')}>
+                    <div className="flex items-center gap-2">Status <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('amount')}>
+                    <div className="flex items-center gap-2">Amount <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium">Version</th>
+                  <th className="text-right p-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedProposals.map((proposal) => (
+                  <tr 
+                    key={proposal.proposal_id} 
+                    className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/proposals/${proposal.proposal_id}`)}
+                    data-testid={`proposal-row-${proposal.proposal_id}`}
+                  >
+                    <td className="p-4">
+                      <p className="font-medium">{proposal.title}</p>
+                    </td>
+                    <td className="p-4 text-muted-foreground">{proposal.client_name}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{proposal.category || '-'}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(proposal.status)}`}>
+                        {proposal.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="p-4 font-mono">{proposal.amount ? `$${proposal.amount.toLocaleString()}` : '-'}</td>
+                    <td className="p-4 text-sm text-muted-foreground">v{proposal.version || 1}</td>
+                    <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1 justify-end">
+                        {proposal.status === 'draft' && (
+                          <Button size="sm" variant="ghost" onClick={() => handleApprove(proposal.proposal_id)}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {proposal.status === 'approved' && (
+                          <Button size="sm" variant="ghost" onClick={() => handleConvert(proposal.proposal_id)}>
+                            Convert
+                          </Button>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-muted-foreground mt-1" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
+        /* Tile View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {proposals.map((proposal) => (
+          {sortedProposals.map((proposal) => (
             <Card 
               key={proposal.proposal_id} 
               className="p-6 hover:shadow-md transition-shadow cursor-pointer" 
@@ -428,7 +494,10 @@ export const ProposalsPage = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-xl font-heading font-semibold mb-2">{proposal.title}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-heading font-semibold">{proposal.title}</h3>
+                    <span className="text-xs text-muted-foreground">v{proposal.version || 1}</span>
+                  </div>
                   <p className="text-sm text-muted-foreground mb-1">Client: {proposal.client_name}</p>
                   {proposal.category && (
                     <p className="text-xs text-muted-foreground">{proposal.category}</p>
