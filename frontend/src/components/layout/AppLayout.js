@@ -222,15 +222,16 @@ export const AppLayout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar for mobile */}
-        <div className="sticky top-0 z-40 flex h-16 items-center gap-x-4 border-b bg-card/80 backdrop-blur-md px-4 lg:hidden">
+        <div className="sticky top-0 z-40 flex h-16 items-center gap-x-4 border-b bg-slate-900 px-4 lg:hidden">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(true)}
+            className="text-white hover:bg-slate-800"
           >
             <Menu className="h-6 w-6" />
           </Button>
-          <h2 className="text-lg font-heading font-bold">AdvantEdge360</h2>
+          <img src="/logo.png" alt="AdvantEdge Advisory" className="h-8 w-auto" />
         </div>
 
         <main className="p-6 lg:p-8">{children}</main>
