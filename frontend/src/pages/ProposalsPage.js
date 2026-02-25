@@ -104,6 +104,47 @@ export const ProposalsPage = () => {
     }
   };
 
+  const handleSendForApproval = async () => {
+    if (!selectedApprover) {
+      toast.error('Please select an approver');
+      return;
+    }
+    try {
+      await axios.post(
+        `${API_URL}/proposals/${selectedProposal.proposal_id}/send-for-internal-approval`,
+        null,
+        { params: { approver_id: selectedApprover }, withCredentials: true }
+      );
+      toast.success('Proposal sent for approval');
+      setIsApprovalDialogOpen(false);
+      setSelectedApprover('');
+      fetchProposals();
+    } catch (error) {
+      toast.error('Failed to send for approval');
+    }
+  };
+
+  const handleSendToClient = async (proposalId) => {
+    try {
+      await axios.patch(`${API_URL}/proposals/${proposalId}`, { status: 'sent_to_client' }, { withCredentials: true });
+      toast.success('Proposal sent to client');
+      fetchProposals();
+    } catch (error) {
+      toast.error('Failed to update proposal status');
+    }
+  };
+
+  const handleConfirmProposal = async () => {
+    try {
+      await axios.post(`${API_URL}/proposals/${selectedProposal.proposal_id}/confirm`, {}, { withCredentials: true });
+      toast.success('Proposal confirmed');
+      setIsConfirmDialogOpen(false);
+      fetchProposals();
+    } catch (error) {
+      toast.error('Failed to confirm proposal');
+    }
+  };
+
   const handleConvert = async (proposalId) => {
     try {
       await axios.post(`${API_URL}/proposals/${proposalId}/convert`, {}, { withCredentials: true });
