@@ -2214,6 +2214,130 @@ async def export_team_productivity_csv(session_token: Optional[str] = Cookie(Non
         headers={"Content-Disposition": "attachment; filename=team_productivity_export.csv"}
     )
 
+# ========== PDF EXPORT FUNCTIONALITY ==========
+
+@api_router.get("/reports/export/projects/pdf")
+async def export_projects_pdf(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    pdf_buffer = create_projects_pdf(projects)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=projects_report.pdf"}
+    )
+
+@api_router.get("/reports/export/tasks/pdf")
+async def export_tasks_pdf(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    tasks = await db.tasks.find({}, {"_id": 0}).to_list(10000)
+    pdf_buffer = create_tasks_pdf(tasks)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=tasks_report.pdf"}
+    )
+
+@api_router.get("/reports/export/time-logs/pdf")
+async def export_time_logs_pdf(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
+    pdf_buffer = create_time_logs_pdf(logs)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=time_logs_report.pdf"}
+    )
+
+@api_router.get("/reports/export/team-productivity/pdf")
+async def export_team_productivity_pdf(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    team_members = await db.users.find({}, {"_id": 0}).to_list(1000)
+    team_data = []
+    
+    for member in team_members:
+        tasks = await db.tasks.find({"assigned_to": member["user_id"]}, {"_id": 0}).to_list(1000)
+        completed_tasks = [t for t in tasks if t.get("status") == "completed"]
+        time_logs = await db.time_logs.find({"user_id": member["user_id"]}, {"_id": 0}).to_list(10000)
+        total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
+        
+        team_data.append({
+            "name": member["name"],
+            "role": member["role"],
+            "total_tasks": len(tasks),
+            "completed_tasks": len(completed_tasks),
+            "total_hours": round(total_hours, 2)
+        })
+    
+    pdf_buffer = create_team_productivity_pdf(team_data)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=team_productivity_report.pdf"}
+    )
+
+@api_router.get("/reports/export/overview/pdf")
+async def export_overview_pdf(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Gather overview data
+    projects_count = await db.projects.count_documents({})
+    active_projects = await db.projects.count_documents({"status": "active"})
+    tasks_count = await db.tasks.count_documents({})
+    completed_tasks = await db.tasks.count_documents({"status": "completed"})
+    team_count = await db.users.count_documents({})
+    
+    time_logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
+    total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
+    billable_hours = sum(log.get("duration_minutes", 0) for log in time_logs if log.get("billable")) / 60
+    
+    overview_data = {
+        "projects": {"total": projects_count, "active": active_projects},
+        "tasks": {
+            "total": tasks_count,
+            "completed": completed_tasks,
+            "completion_rate": (completed_tasks / tasks_count * 100) if tasks_count > 0 else 0
+        },
+        "team": {"total": team_count},
+        "time": {
+            "total_hours": round(total_hours, 2),
+            "billable_hours": round(billable_hours, 2),
+            "non_billable_hours": round(total_hours - billable_hours, 2)
+        }
+    }
+    
+    # Add finance data for authorized users
+    if user.role in ["admin", "manager", "finance"]:
+        invoices = await db.invoices.find({}, {"_id": 0}).to_list(1000)
+        expenses = await db.expenses.find({}, {"_id": 0}).to_list(1000)
+        
+        total_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "paid")
+        pending_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "pending")
+        total_expenses = sum(exp.get("amount", 0) for exp in expenses)
+        
+        overview_data["finance"] = {
+            "total_revenue": total_revenue,
+            "pending_revenue": pending_revenue,
+            "total_expenses": total_expenses,
+            "profit": total_revenue - total_expenses
+        }
+    
+    pdf_buffer = create_overview_pdf(overview_data)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=overview_report.pdf"}
+    )
+
 # ========== FINANCE MODELS & ROUTES ==========
 
 class Invoice(BaseModel):
