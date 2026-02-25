@@ -1141,6 +1141,113 @@ export const ProjectDetailPage = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={isEditTaskDialog} onOpenChange={setIsEditTaskDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateTask} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Task Title</label>
+              <Input
+                value={editTaskForm.title || ''}
+                onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Description</label>
+              <Textarea
+                value={editTaskForm.description || ''}
+                onChange={(e) => setEditTaskForm({ ...editTaskForm, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Priority</label>
+                <Select value={editTaskForm.priority || 'medium'} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, priority: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorities.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select value={editTaskForm.status || 'not_started'} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taskStatuses.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Assign To</label>
+                <Select value={editTaskForm.assigned_to || ''} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, assigned_to: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Unassigned</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>{member.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Reviewer</label>
+                <Select value={editTaskForm.reviewer_id || ''} onValueChange={(value) => setEditTaskForm({ ...editTaskForm, reviewer_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="No reviewer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No reviewer</SelectItem>
+                    {teamMembers.filter(m => ['admin', 'manager', 'team_lead'].includes(m.role)).map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>{member.name} ({member.role})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Start Date</label>
+                <Input
+                  type="date"
+                  value={editTaskForm.start_date || ''}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Due Date</label>
+                <Input
+                  type="date"
+                  value={editTaskForm.end_date || ''}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditTaskDialog(false)}>Cancel</Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
