@@ -36,8 +36,9 @@ const statusColors = {
   paid: 'bg-blue-500/20 text-blue-600 border-blue-500/30'
 };
 
-export const LeaveReimbursementPage = () => {
+export const LeaveReimbursementPage = ({ defaultTab = 'leaves' }) => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [leaves, setLeaves] = useState([]);
   const [reimbursements, setReimbursements] = useState([]);
   const [projects, setProjects] = useState([]);
