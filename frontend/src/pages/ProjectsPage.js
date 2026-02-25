@@ -195,6 +195,7 @@ export const ProjectsPage = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {projects.length === 0 ? (
@@ -203,9 +204,71 @@ export const ProjectsPage = () => {
           <h3 className="text-xl font-heading font-semibold mb-2">No projects yet</h3>
           <p className="text-muted-foreground mb-6">Get started by creating your first project</p>
         </Card>
+      ) : viewMode === 'list' ? (
+        /* List View */
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('name')}>
+                    <div className="flex items-center gap-2">Name <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('client_name')}>
+                    <div className="flex items-center gap-2">Client <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('status')}>
+                    <div className="flex items-center gap-2">Status <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('completion_percentage')}>
+                    <div className="flex items-center gap-2">Progress <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-left p-4 font-medium cursor-pointer hover:bg-muted" onClick={() => toggleSort('budget')}>
+                    <div className="flex items-center gap-2">Budget <ArrowUpDown className="h-3 w-3" /></div>
+                  </th>
+                  <th className="text-right p-4 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedProjects.map((project) => (
+                  <tr 
+                    key={project.project_id} 
+                    className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/projects/${project.project_id}`)}
+                    data-testid={`project-row-${project.project_id}`}
+                  >
+                    <td className="p-4">
+                      <p className="font-medium">{project.name}</p>
+                      {project.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-1">{project.description}</p>
+                      )}
+                    </td>
+                    <td className="p-4 text-muted-foreground">{project.client_name || '-'}</td>
+                    <td className="p-4">
+                      <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary/20 text-primary">
+                        {project.status}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Progress value={project.completion_percentage || 0} className="h-2 w-20" />
+                        <span className="text-sm">{project.completion_percentage || 0}%</span>
+                      </div>
+                    </td>
+                    <td className="p-4 font-mono">{project.budget ? `$${project.budget.toLocaleString()}` : '-'}</td>
+                    <td className="p-4 text-right">
+                      <ChevronRight className="h-5 w-5 text-muted-foreground inline" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
+        /* Tile View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {sortedProjects.map((project) => (
             <Card 
               key={project.project_id} 
               className="p-6 hover:shadow-md transition-shadow cursor-pointer" 
