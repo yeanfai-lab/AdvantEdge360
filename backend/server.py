@@ -2953,6 +2953,249 @@ async def delete_expense(expense_id: str, session_token: Optional[str] = Cookie(
     
     return {"message": "Expense deleted"}
 
+# ========== FEE STRUCTURE ROUTES ==========
+
+@api_router.post("/fee-structure", response_model=FeeStructureItem)
+async def create_fee_structure_item(payload: FeeStructureCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    item_id = f"fee_{uuid.uuid4().hex[:12]}"
+    item_doc = {
+        "item_id": item_id,
+        "project_id": payload.project_id,
+        "stage": payload.stage,
+        "deliverable": payload.deliverable,
+        "percentage": payload.percentage,
+        "amount": payload.amount,
+        "tentative_billing_date": payload.tentative_billing_date,
+        "deliverable_status": payload.deliverable_status,
+        "invoice_status": payload.invoice_status,
+        "payment_status": payload.payment_status,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": None
+    }
+    
+    await db.fee_structure.insert_one(item_doc)
+    item_doc['created_at'] = datetime.fromisoformat(item_doc['created_at'])
+    return FeeStructureItem(**item_doc)
+
+@api_router.get("/fee-structure", response_model=List[FeeStructureItem])
+async def get_fee_structure(project_id: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {"project_id": project_id} if project_id else {}
+    items = await db.fee_structure.find(query, {"_id": 0}).to_list(1000)
+    for item in items:
+        if isinstance(item.get('created_at'), str):
+            item['created_at'] = datetime.fromisoformat(item['created_at'])
+        if item.get('updated_at') and isinstance(item['updated_at'], str):
+            item['updated_at'] = datetime.fromisoformat(item['updated_at'])
+    return items
+
+@api_router.patch("/fee-structure/{item_id}")
+async def update_fee_structure_item(item_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    item = await db.fee_structure.find_one({"item_id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Fee structure item not found")
+    
+    allowed_fields = ["stage", "deliverable", "percentage", "amount", "tentative_billing_date", 
+                      "deliverable_status", "invoice_status", "payment_status"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    filtered_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.fee_structure.update_one({"item_id": item_id}, {"$set": filtered_updates})
+    return {"message": "Fee structure item updated"}
+
+@api_router.delete("/fee-structure/{item_id}")
+async def delete_fee_structure_item(item_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.fee_structure.delete_one({"item_id": item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Fee structure item not found")
+    
+    return {"message": "Fee structure item deleted"}
+
+# ========== TEAM SALARY ROUTES ==========
+
+@api_router.post("/team-salaries", response_model=TeamSalary)
+async def create_team_salary(payload: TeamSalaryCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get user name
+    team_member = await db.users.find_one({"user_id": payload.user_id}, {"_id": 0})
+    if not team_member:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if salary entry already exists for this user
+    existing = await db.team_salaries.find_one({"user_id": payload.user_id}, {"_id": 0})
+    if existing:
+        # Update instead of create
+        await db.team_salaries.update_one(
+            {"user_id": payload.user_id},
+            {"$set": {
+                "monthly_salary": payload.monthly_salary,
+                "hourly_rate": payload.hourly_rate,
+                "daily_rate": payload.daily_rate,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        updated = await db.team_salaries.find_one({"user_id": payload.user_id}, {"_id": 0})
+        if isinstance(updated.get('created_at'), str):
+            updated['created_at'] = datetime.fromisoformat(updated['created_at'])
+        if updated.get('updated_at') and isinstance(updated['updated_at'], str):
+            updated['updated_at'] = datetime.fromisoformat(updated['updated_at'])
+        return TeamSalary(**updated)
+    
+    salary_id = f"sal_{uuid.uuid4().hex[:12]}"
+    salary_doc = {
+        "salary_id": salary_id,
+        "user_id": payload.user_id,
+        "user_name": team_member.get('name', 'Unknown'),
+        "monthly_salary": payload.monthly_salary,
+        "hourly_rate": payload.hourly_rate,
+        "daily_rate": payload.daily_rate,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": None
+    }
+    
+    await db.team_salaries.insert_one(salary_doc)
+    salary_doc['created_at'] = datetime.fromisoformat(salary_doc['created_at'])
+    return TeamSalary(**salary_doc)
+
+@api_router.get("/team-salaries", response_model=List[TeamSalary])
+async def get_team_salaries(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    salaries = await db.team_salaries.find({}, {"_id": 0}).to_list(1000)
+    for salary in salaries:
+        if isinstance(salary.get('created_at'), str):
+            salary['created_at'] = datetime.fromisoformat(salary['created_at'])
+        if salary.get('updated_at') and isinstance(salary['updated_at'], str):
+            salary['updated_at'] = datetime.fromisoformat(salary['updated_at'])
+    return salaries
+
+@api_router.patch("/team-salaries/{salary_id}")
+async def update_team_salary(salary_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    salary = await db.team_salaries.find_one({"salary_id": salary_id}, {"_id": 0})
+    if not salary:
+        raise HTTPException(status_code=404, detail="Salary record not found")
+    
+    allowed_fields = ["monthly_salary", "hourly_rate", "daily_rate"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    filtered_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.team_salaries.update_one({"salary_id": salary_id}, {"$set": filtered_updates})
+    return {"message": "Salary updated"}
+
+@api_router.delete("/team-salaries/{salary_id}")
+async def delete_team_salary(salary_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.team_salaries.delete_one({"salary_id": salary_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Salary record not found")
+    
+    return {"message": "Salary deleted"}
+
+# ========== CASH FLOW EXPENSE ROUTES ==========
+
+@api_router.post("/cashflow-expenses", response_model=CashFlowExpense)
+async def create_cashflow_expense(payload: CashFlowExpenseCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    expense_id = f"cfe_{uuid.uuid4().hex[:12]}"
+    expense_doc = {
+        "expense_id": expense_id,
+        "expense_head": payload.expense_head,
+        "sub_head": payload.sub_head,
+        "month_year": payload.month_year,
+        "amount": payload.amount,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": None
+    }
+    
+    await db.cashflow_expenses.insert_one(expense_doc)
+    expense_doc['created_at'] = datetime.fromisoformat(expense_doc['created_at'])
+    return CashFlowExpense(**expense_doc)
+
+@api_router.get("/cashflow-expenses", response_model=List[CashFlowExpense])
+async def get_cashflow_expenses(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    expenses = await db.cashflow_expenses.find({}, {"_id": 0}).to_list(1000)
+    for expense in expenses:
+        if isinstance(expense.get('created_at'), str):
+            expense['created_at'] = datetime.fromisoformat(expense['created_at'])
+        if expense.get('updated_at') and isinstance(expense['updated_at'], str):
+            expense['updated_at'] = datetime.fromisoformat(expense['updated_at'])
+    return expenses
+
+@api_router.patch("/cashflow-expenses/{expense_id}")
+async def update_cashflow_expense(expense_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    expense = await db.cashflow_expenses.find_one({"expense_id": expense_id}, {"_id": 0})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Cash flow expense not found")
+    
+    allowed_fields = ["expense_head", "sub_head", "month_year", "amount"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    filtered_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.cashflow_expenses.update_one({"expense_id": expense_id}, {"$set": filtered_updates})
+    return {"message": "Cash flow expense updated"}
+
+@api_router.delete("/cashflow-expenses/{expense_id}")
+async def delete_cashflow_expense(expense_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.cashflow_expenses.delete_one({"expense_id": expense_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cash flow expense not found")
+    
+    return {"message": "Cash flow expense deleted"}
+
 # ========== PHASE 2: TEAM MANAGEMENT ROUTES ==========
 
 # --- Leave Applications ---
