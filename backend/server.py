@@ -4559,18 +4559,35 @@ async def get_overview_report(session_token: Optional[str] = Cookie(None), autho
     completed_tasks = await db.tasks.count_documents({"status": "done"})
     team_count = await db.users.count_documents({})
     
-    time_logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
-    total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
-    billable_hours = sum(log.get("duration_minutes", 0) for log in time_logs if log.get("billable")) / 60
+    # Optimized: Use aggregation for time logs instead of fetching all records
+    total_hours_agg = await db.time_logs.aggregate([
+        {"$group": {"_id": None, "total_minutes": {"$sum": "$duration_minutes"}}}
+    ]).to_list(1)
+    total_hours = (total_hours_agg[0]["total_minutes"] / 60) if total_hours_agg and total_hours_agg[0].get("total_minutes") else 0
+    
+    billable_hours_agg = await db.time_logs.aggregate([
+        {"$match": {"billable": True}},
+        {"$group": {"_id": None, "billable_minutes": {"$sum": "$duration_minutes"}}}
+    ]).to_list(1)
+    billable_hours = (billable_hours_agg[0]["billable_minutes"] / 60) if billable_hours_agg and billable_hours_agg[0].get("billable_minutes") else 0
     
     finance_data = {}
-    if user.role in ["admin", "manager", "finance"]:
-        invoices = await db.invoices.find({}, {"_id": 0}).to_list(1000)
-        expenses = await db.expenses.find({}, {"_id": 0}).to_list(1000)
+    if user.role in ["admin", "manager"]:
+        # Optimized: Use aggregation for invoices and expenses
+        revenue_agg = await db.invoices.aggregate([
+            {"$group": {
+                "_id": "$status",
+                "total": {"$sum": "$amount"}
+            }}
+        ]).to_list(10)
+        revenue_map = {r["_id"]: r["total"] for r in revenue_agg}
+        total_revenue = revenue_map.get("paid", 0)
+        pending_revenue = revenue_map.get("pending", 0)
         
-        total_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "paid")
-        pending_revenue = sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "pending")
-        total_expenses = sum(exp.get("amount", 0) for exp in expenses)
+        expenses_agg = await db.expenses.aggregate([
+            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+        ]).to_list(1)
+        total_expenses = expenses_agg[0]["total"] if expenses_agg and expenses_agg[0].get("total") else 0
         
         finance_data = {
             "total_revenue": total_revenue,
