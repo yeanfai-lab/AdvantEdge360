@@ -329,7 +329,7 @@ export const LeaveReimbursementPage = ({ defaultTab = 'leaves' }) => {
         </div>
       )}
 
-      <Tabs defaultValue="leaves" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="leaves">Leave Applications</TabsTrigger>
           <TabsTrigger value="reimbursements">Reimbursements</TabsTrigger>
