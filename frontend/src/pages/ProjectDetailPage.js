@@ -498,7 +498,7 @@ export const ProjectDetailPage = () => {
             {project.budget && (
               <div>
                 <p className="text-xs text-muted-foreground">Budget</p>
-                <p className="text-lg font-bold">${project.budget.toLocaleString()}</p>
+                <p className="text-lg font-bold">INR {project.budget.toLocaleString('en-IN')}</p>
               </div>
             )}
             {project.start_date && (
