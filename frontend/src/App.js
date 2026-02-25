@@ -144,6 +144,16 @@ function AppRouter() {
         }
       />
       <Route
+        path="/companies/:companyId"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <CompanyDetailPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/finance"
         element={
           <ProtectedRoute>
