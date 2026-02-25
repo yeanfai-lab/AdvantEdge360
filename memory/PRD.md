@@ -21,6 +21,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ### 2. Proposal Management
 - **Status Workflow**: Draft → Pending Approval → Approved → Sent to Client → Signed → Converted
 - **Fields**: Title, Client, Category, Requirement, Scope/Area, Final Proposal, Amount
+- **Client Contact Dropdown**: Select from existing contacts or enter custom name
 - **Categories**: Individual-Residential, Housing, Commercial, Institutional, Hospitality
 - **Versioning System** with restore functionality
 - Internal approval workflow
@@ -46,12 +47,19 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - Statistics cards (clickable)
 - **My Tasks** with Project Name & Client Name
 - **Pending Team Requests Panel** (Admin/Manager) for leaves/reimbursements
-- **Team Tasks Overview** with filter by Status/Team Member/Project (no completed)
+- **Team Tasks Overview**: 
+  - Filter by Status/Team Member/Project
+  - **Excludes Not Started and Completed tasks** - shows only active work
 - Quick Actions matching page forms (with Internal task option)
 - Pending Reviews and Proposal Approvals sections
 
 ### 6. Team Management
-- Role-based access (Admin, Manager, Supervisor, Team Lead, Team Member, Finance)
+- **Roles** (Supervisor removed):
+  - **Admin**: Full access, can invite team members
+  - **Manager**: Project management with financial access, can invite team members
+  - **Team Lead**: Team coordination and management (can manage team, cannot invite)
+  - **Finance**: Financial data access only
+  - **Team Member**: Own tasks only
 - **Leave Applications** (separate page):
   - Types: Casual, Sick, Earned/Annual, Unpaid, Work from Home
   - **Calendar View** by month/year showing team leaves and public holidays
@@ -74,7 +82,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - Editable time entries
 
 ### 8. Finance Module
-- **Currency**: INR throughout the portal
+- **Currency**: INR throughout the portal (all pages use Indian number formatting)
 - **Fee Structure Tab**:
   - Project dropdown selector
   - CRUD table: Stage, Deliverable, %, Amount, Billing Date, Statuses
@@ -111,73 +119,87 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ## Implementation Status
 
-### February 2026 - V10 Feature Update
+### February 2026 - V11 Updates
+
+#### Phase 7: Role Permissions & UI Enhancements
+- [x] Removed "Supervisor" role completely from the system
+- [x] Added "Finance" role (can view financial data only)
+- [x] Team Lead now has "can_manage_team" permission
+- [x] Only Admin and Manager can invite team members (can_invite_team)
+- [x] Role Permissions Overview shows new permission badges
+- [x] Cleared all dummy data from database
 
 #### Phase 6: Task & Client Enhancements
 - [x] Added "Assigned" task status (between Not Started and In Progress)
 - [x] Added "Internal" task option for non-billable tasks
 - [x] Company Detail Page with tabs for Contacts, Projects, Proposals, Tasks, Finance
 - [x] Clickable company tiles on Clients page
-- [x] Currency format verified as INR across all pages
+- [x] INR currency format across ALL pages (Proposals, Projects, Finance, Clients)
+- [x] Client contact dropdown in proposal creation form
+- [x] Dashboard Team Tasks excludes "Not Started" and "Completed" tasks
 
-### December 2025 - V9 Complete Feature Set
-
-#### Phase 1: Currency & Email Notifications
-- [x] Changed ₹ to INR across entire portal
-- [x] Email notifications for leave approval/rejection (DEMO MODE)
-- [x] Email notifications for reimbursement approval/rejection/paid (DEMO MODE)
-
-#### Phase 2: Leave Enhancements
-- [x] Public Holidays CRUD (Admin only)
-- [x] Calendar View with team leaves and holidays marked
-- [x] Leave Accrual Policies CRUD - define accrual per month per leave type
-- [x] Leave Balances calculated from accrual based on DOJ
-- [x] Negative balance allowed
-
-#### Phase 3: Reimbursements Enhancement
-- [x] Receipt file upload (JPG, PNG, PDF - max 5MB)
-- [x] Project vs Internal tagging
-- [x] Project-tagged reimbursements in Finance profitability
-- [x] Reimbursements in Cash Flow projection
-
-#### Phase 4: Finance Bulk Actions
-- [x] Fee Structure bulk select with checkboxes
-- [x] Bulk status update (Invoice, Payment, Deliverable status)
-- [x] Bulk Add dialog for multiple deliverables
-
-#### Phase 5: Self-Service BI Report Builder
-- [x] Module selector (9 data sources)
-- [x] Field selection with click-to-add
-- [x] Drag-and-drop reordering
-- [x] Report generation with data display
-- [x] Filter by any field with operators
-- [x] Sort by any column
-- [x] Export to CSV
-- [x] Export to PDF
+### December 2025 - V9-V10 Complete Feature Set
+(Previous implementations preserved)
 
 ---
 
 ## API Endpoints
 
-### New Endpoints (V10)
+### New/Updated Endpoints (V11)
+- `GET /api/roles` - Returns 5 roles (admin, manager, team_lead, finance, team_member) with can_invite_team permission
+- `GET /api/user/permissions` - Returns can_invite_team in permissions object
+- `GET /api/dashboard/team-tasks` - Now excludes not_started AND completed tasks
+
+### V10 Endpoints
 - `GET /api/companies/{company_id}/overview` - Company detail with contacts, projects, proposals, tasks, finance
 
-### V9 Endpoints
-- `GET/POST/PATCH/DELETE /api/public-holidays` - Public holidays CRUD
-- `GET/POST/PATCH/DELETE /api/leave-accrual-policies` - Leave accrual policies CRUD
-- `GET /api/leave-balances` - Get calculated leave balances
-- `POST /api/leave-balances/adjust` - Adjust leave balance (Admin)
-- `POST /api/upload/receipt` - Upload receipt file
-- `GET /api/uploads/{filename}` - Get uploaded file
-- `PATCH /api/reimbursements/{id}/upload-receipt` - Attach receipt to reimbursement
-- `POST /api/reports/export-custom-pdf` - Export custom report as PDF
+---
+
+## Code Architecture
+
+### Backend Structure
+```
+/app/backend/
+├── server.py           # Main API file (~4400 lines)
+├── models/            # Extracted Pydantic models (NEW)
+│   ├── user.py
+│   ├── proposal.py
+│   ├── project.py
+│   ├── task.py
+│   ├── client.py
+│   ├── time_tracking.py
+│   ├── team.py
+│   └── finance.py
+├── core/              # Core configuration (NEW)
+│   ├── config.py      # DB connection, ROLES config
+│   └── auth.py        # Authentication helpers
+└── routes/            # Route modules (prepared for future migration)
+```
+
+### Frontend Structure
+```
+/app/frontend/src/
+├── pages/
+│   ├── DashboardPage.js
+│   ├── ProposalsPage.js
+│   ├── ProjectsPage.js
+│   ├── TasksPage.js
+│   ├── ClientsPage.js
+│   ├── CompanyDetailPage.js
+│   ├── TeamPage.js
+│   ├── FinancePage.js
+│   └── ReportsPage.js
+└── components/
+    └── layout/
+        └── AppLayout.js
+```
 
 ---
 
 ## Pending/Future Tasks
 
 ### P1 - High Priority
-- [ ] Backend monolith refactoring (server.py is 4400+ lines)
+- [ ] Complete backend modular refactoring (migrate routes from server.py to /routes/)
 - [ ] Email Notifications - Implement real Gmail API (keys to be provided)
 
 ### P2 - Medium Priority
@@ -197,11 +219,16 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ## Technical Notes
 
 ### Database Collections
-users, proposals, projects, tasks, time_logs, active_timers, companies, clients, fee_structure, team_salaries, cashflow_expenses, leaves, reimbursements, public_holidays, leave_accrual_policies, leave_balances, email_notifications
+users, user_sessions, proposals, projects, tasks, time_logs, active_timers, companies, clients, fee_structure, team_salaries, cashflow_expenses, leaves, reimbursements, public_holidays, leave_accrual_policies, leave_balances, email_notifications, invoices, expenses
 
-### Data Models Updated (V10)
-- **Task**: Added `is_internal` (bool) and made `project_id` optional
-- **Task statuses**: Added "assigned" status
+### Role Configuration (V11)
+| Role | Level | View Financial | Manage Team | Invite Team | Edit All | Delete All |
+|------|-------|----------------|-------------|-------------|----------|------------|
+| Admin | 100 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Manager | 70 | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Team Lead | 50 | ✗ | ✓ | ✗ | ✗ | ✗ |
+| Finance | 40 | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Team Member | 10 | ✗ | ✗ | ✗ | ✗ | ✗ |
 
 ### Mocked/Demo Features
 - Email notifications: Stored in `email_notifications` collection but not sent
