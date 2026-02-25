@@ -63,6 +63,28 @@ export const ProjectsPage = () => {
     }
   };
 
+  const sortedProjects = [...projects].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+    if (sortField === 'budget' || sortField === 'completion_percentage') {
+      aVal = aVal || 0;
+      bVal = bVal || 0;
+    }
+    if (sortOrder === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    }
+    return aVal < bVal ? 1 : -1;
+  });
+
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   }
@@ -74,30 +96,49 @@ export const ProjectsPage = () => {
           <h1 className="text-4xl font-heading font-bold tracking-tight mb-2">Projects</h1>
           <p className="text-base text-muted-foreground">Manage your client projects and deliverables</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="create-project-button">
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
+        <div className="flex gap-2">
+          <div className="flex border rounded-md">
+            <Button 
+              variant={viewMode === 'tile' ? 'default' : 'ghost'} 
+              size="sm" 
+              className="rounded-r-none"
+              onClick={() => setViewMode('tile')}
+            >
+              <LayoutGrid className="h-4 w-4" />
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Project Name</label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter project name"
-                  required
-                  data-testid="project-name-input"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Description</label>
+            <Button 
+              variant={viewMode === 'list' ? 'default' : 'ghost'} 
+              size="sm" 
+              className="rounded-l-none"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="create-project-button">
+                <Plus className="mr-2 h-4 w-4" />
+                New Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Project</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Project Name</label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter project name"
+                    required
+                    data-testid="project-name-input"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Description</label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
