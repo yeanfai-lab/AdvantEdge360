@@ -235,10 +235,11 @@ class ProposalCreate(BaseModel):
 class Task(BaseModel):
     model_config = ConfigDict(extra="ignore")
     task_id: str
-    project_id: str
+    project_id: Optional[str] = None  # Optional for internal tasks
+    is_internal: bool = False  # True if task is internal (not billable to any project)
     title: str
     description: Optional[str] = None
-    status: str = "not_started"  # not_started, in_progress, on_hold, under_review, completed
+    status: str = "not_started"  # not_started, assigned, in_progress, on_hold, under_review, completed
     priority: str = "medium"
     assigned_to: Optional[str] = None
     reviewer_id: Optional[str] = None
@@ -259,7 +260,8 @@ class Task(BaseModel):
     updated_at: Optional[datetime] = None
 
 class TaskCreate(BaseModel):
-    project_id: str
+    project_id: Optional[str] = None  # Optional - can be None for internal tasks
+    is_internal: bool = False  # True if task is internal (not billable)
     title: str
     description: Optional[str] = None
     priority: str = "medium"
