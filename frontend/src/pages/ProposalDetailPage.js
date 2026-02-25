@@ -9,7 +9,7 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { ArrowLeft, Edit, Send, Check, X, FileText, MessageSquare, History, RotateCcw, Clock } from 'lucide-react';
+import { ArrowLeft, Edit, Send, Check, X, FileText, MessageSquare, History, RotateCcw, Clock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const categories = [
