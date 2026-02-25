@@ -168,27 +168,17 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <AppLayout>
-              <LeaveReimbursementPage />
+              <LeaveReimbursementPage defaultTab="leaves" />
             </AppLayout>
           </ProtectedRoute>
         }
       />
       <Route
-        path="/performance-reviews"
+        path="/reimbursements"
         element={
           <ProtectedRoute>
             <AppLayout>
-              <PerformanceReviewPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/onboarding"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <OnboardingPage />
+              <LeaveReimbursementPage defaultTab="reimbursements" />
             </AppLayout>
           </ProtectedRoute>
         }
