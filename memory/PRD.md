@@ -9,6 +9,12 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - **Company/Contact hierarchy** with full CRUD for both
 - **Company fields**: Name, Industry, Website, Phone, Business Address, GST Number, PAN Number
 - **Contact fields**: Name, Email, Phone, Position, Company, Business Address, GST Number, PAN Number, Notes
+- **Company Detail View**: Clickable company tiles navigate to detailed view showing:
+  - Associated contacts
+  - Related projects
+  - Proposals
+  - Tasks
+  - Financial summary (revenue, pending revenue, invoices)
 - Custom fields support
 - Status tracking
 
@@ -28,8 +34,9 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - **View Toggle**: Tile and List views
 
 ### 4. Task Management
-- **Statuses**: Not Started, In Progress, On Hold, Under Review, Completed
+- **Statuses**: Not Started, **Assigned**, In Progress, On Hold, Under Review, Completed
 - **Priorities**: Low, Medium, High, Urgent
+- **Internal Tasks**: Non-billable tasks not linked to any project (for internal business operations)
 - Sub-tasks with expand/collapse
 - **Review Workflow**: Send for Review, Approve, Return, Reject
 - Comments system
@@ -40,7 +47,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - **My Tasks** with Project Name & Client Name
 - **Pending Team Requests Panel** (Admin/Manager) for leaves/reimbursements
 - **Team Tasks Overview** with filter by Status/Team Member/Project (no completed)
-- Quick Actions matching page forms
+- Quick Actions matching page forms (with Internal task option)
 - Pending Reviews and Proposal Approvals sections
 
 ### 6. Team Management
@@ -104,6 +111,15 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ## Implementation Status
 
+### February 2026 - V10 Feature Update
+
+#### Phase 6: Task & Client Enhancements
+- [x] Added "Assigned" task status (between Not Started and In Progress)
+- [x] Added "Internal" task option for non-billable tasks
+- [x] Company Detail Page with tabs for Contacts, Projects, Proposals, Tasks, Finance
+- [x] Clickable company tiles on Clients page
+- [x] Currency format verified as INR across all pages
+
 ### December 2025 - V9 Complete Feature Set
 
 #### Phase 1: Currency & Email Notifications
@@ -143,7 +159,10 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ## API Endpoints
 
-### New Endpoints
+### New Endpoints (V10)
+- `GET /api/companies/{company_id}/overview` - Company detail with contacts, projects, proposals, tasks, finance
+
+### V9 Endpoints
 - `GET/POST/PATCH/DELETE /api/public-holidays` - Public holidays CRUD
 - `GET/POST/PATCH/DELETE /api/leave-accrual-policies` - Leave accrual policies CRUD
 - `GET /api/leave-balances` - Get calculated leave balances
@@ -158,8 +177,8 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ## Pending/Future Tasks
 
 ### P1 - High Priority
+- [ ] Backend monolith refactoring (server.py is 4400+ lines)
 - [ ] Email Notifications - Implement real Gmail API (keys to be provided)
-- [ ] Backend monolith refactoring (server.py is 4000+ lines)
 
 ### P2 - Medium Priority
 - [ ] Google Drive full integration (currently demo mode)
@@ -179,6 +198,10 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ### Database Collections
 users, proposals, projects, tasks, time_logs, active_timers, companies, clients, fee_structure, team_salaries, cashflow_expenses, leaves, reimbursements, public_holidays, leave_accrual_policies, leave_balances, email_notifications
+
+### Data Models Updated (V10)
+- **Task**: Added `is_internal` (bool) and made `project_id` optional
+- **Task statuses**: Added "assigned" status
 
 ### Mocked/Demo Features
 - Email notifications: Stored in `email_notifications` collection but not sent
