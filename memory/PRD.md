@@ -206,6 +206,22 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ### Dashboard
 - GET /api/dashboard/my-tasks
 - GET /api/dashboard/team-tasks
+- GET /api/dashboard/pending-reviews
+- GET /api/dashboard/pending-approvals
+
+### Reports & Export (New in V4)
+- GET /api/reports/overview
+- GET /api/reports/project-performance
+- GET /api/reports/team-productivity
+- GET /api/reports/export/projects (CSV)
+- GET /api/reports/export/projects/pdf (PDF)
+- GET /api/reports/export/tasks (CSV)
+- GET /api/reports/export/tasks/pdf (PDF)
+- GET /api/reports/export/time-logs (CSV)
+- GET /api/reports/export/time-logs/pdf (PDF)
+- GET /api/reports/export/team-productivity (CSV)
+- GET /api/reports/export/team-productivity/pdf (PDF)
+- GET /api/reports/export/overview/pdf (PDF)
 
 ## File Structure
 ```
@@ -213,11 +229,20 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ├── backend/
 │   ├── server.py          # Main FastAPI application
 │   ├── requirements.txt
+│   ├── models/            # Pydantic models (NEW)
+│   ├── services/          # Business logic services (NEW)
+│   │   └── pdf_service.py # PDF generation
+│   ├── utils/             # Utility functions (NEW)
 │   └── .env
 ├── frontend/
 │   └── src/
 │       ├── components/    # shadcn/ui components
 │       ├── contexts/      # AuthContext
+│       ├── hooks/         # Custom hooks (NEW)
+│       │   ├── useProposals.js
+│       │   ├── useProjects.js
+│       │   ├── useTasks.js
+│       │   └── useTimer.js
 │       ├── layouts/       # AppLayout with sidebar
 │       └── pages/
 │           ├── DashboardPage.js
@@ -226,14 +251,15 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 │           ├── ProjectsPage.js
 │           ├── ProjectDetailPage.js
 │           ├── TasksPage.js
+│           ├── ReportsPage.js (Enhanced with PDF export)
 │           ├── ClientsPage.js
 │           ├── ClientDetailPage.js
 │           └── ...
 ├── memory/
 │   └── PRD.md
 └── test_reports/
-    ├── iteration_2.json
-    └── iteration_3.json
+    ├── iteration_4.json
+    └── iteration_5.json
 ```
 
 ## Testing
