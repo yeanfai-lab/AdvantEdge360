@@ -713,6 +713,67 @@ export const ProjectDetailPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Create Subtask Dialog */}
+      <Dialog open={isSubtaskDialog} onOpenChange={setIsSubtaskDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Subtask for "{selectedTask?.title}"</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubtask} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subtask Title</label>
+              <Input
+                value={subtaskForm.title}
+                onChange={(e) => setSubtaskForm({ ...subtaskForm, title: e.target.value })}
+                placeholder="Enter subtask title"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Description</label>
+              <Textarea
+                value={subtaskForm.description}
+                onChange={(e) => setSubtaskForm({ ...subtaskForm, description: e.target.value })}
+                placeholder="Subtask description"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Priority</label>
+                <Select value={subtaskForm.priority} onValueChange={(value) => setSubtaskForm({ ...subtaskForm, priority: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorities.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Assign To</label>
+                <Select value={subtaskForm.assigned_to} onValueChange={(value) => setSubtaskForm({ ...subtaskForm, assigned_to: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>{member.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsSubtaskDialog(false)}>Cancel</Button>
+              <Button type="submit">Create Subtask</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Task Detail Dialog */}
       <Dialog open={isTaskDetailDialog} onOpenChange={setIsTaskDetailDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -746,6 +807,15 @@ export const ProjectDetailPage = () => {
                     <p className="font-medium">{selectedTask.end_date}</p>
                   </div>
                 )}
+                {selectedTask.total_tracked_time > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Time Tracked</p>
+                    <p className="font-medium flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {formatTime(selectedTask.total_tracked_time)}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -764,8 +834,55 @@ export const ProjectDetailPage = () => {
                 </div>
               )}
 
+              {/* Subtasks Section */}
+              {!selectedTask.parent_task_id && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium">Subtasks ({selectedTask.subtasks?.length || 0})</p>
+                    <Button size="sm" variant="outline" onClick={() => setIsSubtaskDialog(true)}>
+                      <Plus className="mr-1 h-3 w-3" />
+                      Add Subtask
+                    </Button>
+                  </div>
+                  {selectedTask.subtask_details?.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedTask.subtask_details.map((st) => (
+                        <div key={st.task_id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <div className="flex items-center gap-2">
+                            <CornerDownRight className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{st.title}</span>
+                            {getStatusBadge(st.status)}
+                          </div>
+                          <Select 
+                            value={st.status} 
+                            onValueChange={(value) => handleStatusChange(st.task_id, value)}
+                          >
+                            <SelectTrigger className="w-28 h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {taskStatuses.map((status) => (
+                                <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-2">No subtasks</p>
+                  )}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex flex-wrap gap-2">
+                {!activeTimer && (
+                  <Button variant="outline" onClick={() => handleStartTimer(selectedTask.task_id)}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Start Timer
+                  </Button>
+                )}
                 {selectedTask.status === 'in_progress' && selectedTask.assigned_to === user?.user_id && (
                   <Select onValueChange={(reviewerId) => handleSendForReview(selectedTask.task_id, reviewerId)}>
                     <SelectTrigger className="w-48">
