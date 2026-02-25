@@ -119,7 +119,8 @@ export const TasksPage = () => {
     try {
       // Create main task
       const taskRes = await axios.post(`${API_URL}/tasks`, {
-        project_id: taskForm.project_id,
+        project_id: taskForm.is_internal ? null : taskForm.project_id,
+        is_internal: taskForm.is_internal,
         title: taskForm.title,
         description: taskForm.description,
         priority: taskForm.priority,
@@ -135,7 +136,8 @@ export const TasksPage = () => {
         const subtaskIds = [];
         for (const subtask of taskForm.subtasks_to_create) {
           const stRes = await axios.post(`${API_URL}/tasks`, {
-            project_id: taskForm.project_id,
+            project_id: taskForm.is_internal ? null : taskForm.project_id,
+            is_internal: taskForm.is_internal,
             parent_task_id: taskRes.data.task_id,
             title: subtask.title,
             description: subtask.description || '',
@@ -165,7 +167,7 @@ export const TasksPage = () => {
         : 'Task created');
       setIsTaskDialog(false);
       setTaskForm({ 
-        project_id: '', title: '', description: '', priority: 'medium', 
+        project_id: '', is_internal: false, title: '', description: '', priority: 'medium', 
         assigned_to: '', start_date: '', end_date: '', reviewer_id: '',
         parent_task_id: '', subtasks_to_create: []
       });
