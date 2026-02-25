@@ -189,12 +189,20 @@ export const TeamPage = () => {
           <h1 className="text-4xl font-heading font-bold tracking-tight mb-2">Team Management</h1>
           <p className="text-base text-muted-foreground">Manage team members, roles, and project assignments</p>
         </div>
-        {permissions && (
-          <div className="flex items-center gap-2 text-sm">
-            <Shield className="h-4 w-4" />
-            <span>Your role: <Badge className={roleColors[permissions.role]}>{formatRole(permissions.role)}</Badge></span>
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {canInviteTeam && (
+            <Button onClick={() => setIsInviteDialog(true)} data-testid="invite-team-btn">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite Team Member
+            </Button>
+          )}
+          {permissions && (
+            <div className="flex items-center gap-2 text-sm">
+              <Shield className="h-4 w-4" />
+              <span>Your role: <Badge className={roleColors[permissions.role]}>{formatRole(permissions.role)}</Badge></span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Role Permissions Overview */}
