@@ -10,18 +10,14 @@ export const LoginPage = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-cover bg-center relative"
-      style={{
-        backgroundImage: 'url(https://images.pexels.com/photos/18435276/pexels-photo-18435276.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940)'
-      }}
+      className="min-h-screen flex items-center justify-center bg-slate-900 relative"
     >
-      <div className="absolute inset-0 bg-primary/90 backdrop-blur-sm" />
       <div className="relative z-10 max-w-md w-full mx-4">
         <div className="bg-card rounded-lg shadow-xl p-8 border">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-heading font-bold text-foreground mb-2">
-              AdvantEdge360
-            </h1>
+            <div className="flex justify-center mb-4 bg-slate-900 rounded-lg p-4">
+              <img src="/logo.png" alt="AdvantEdge Advisory" className="h-16 w-auto" />
+            </div>
             <p className="text-muted-foreground">
               Integrated Business Operations Platform
             </p>
