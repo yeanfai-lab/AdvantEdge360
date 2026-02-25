@@ -3703,10 +3703,23 @@ async def approve_reimbursement(reimbursement_id: str, comments: Optional[str] =
     if user.role not in ["admin", "manager", "supervisor", "finance"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    reimbursement = await db.reimbursements.find_one({"reimbursement_id": reimbursement_id}, {"_id": 0})
+    if not reimbursement:
+        raise HTTPException(status_code=404, detail="Reimbursement not found")
+    
     await db.reimbursements.update_one(
         {"reimbursement_id": reimbursement_id},
         {"$set": {"status": "approved", "approved_by": user.user_id, "approver_comments": comments}}
     )
+    
+    # Send email notification (demo mode)
+    applicant = await db.users.find_one({"user_id": reimbursement["user_id"]}, {"_id": 0})
+    if applicant and applicant.get("email"):
+        await send_email_notification(
+            to_email=applicant["email"],
+            subject=f"Reimbursement Approved - INR {reimbursement['amount']}",
+            body=f"Your reimbursement request for INR {reimbursement['amount']} ({reimbursement['category']}) has been approved by {user.name}." + (f"\n\nComments: {comments}" if comments else "")
+        )
     
     return {"message": "Reimbursement approved"}
 
@@ -3717,10 +3730,23 @@ async def reject_reimbursement(reimbursement_id: str, comments: Optional[str] = 
     if user.role not in ["admin", "manager", "supervisor", "finance"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    reimbursement = await db.reimbursements.find_one({"reimbursement_id": reimbursement_id}, {"_id": 0})
+    if not reimbursement:
+        raise HTTPException(status_code=404, detail="Reimbursement not found")
+    
     await db.reimbursements.update_one(
         {"reimbursement_id": reimbursement_id},
         {"$set": {"status": "rejected", "approved_by": user.user_id, "approver_comments": comments}}
     )
+    
+    # Send email notification (demo mode)
+    applicant = await db.users.find_one({"user_id": reimbursement["user_id"]}, {"_id": 0})
+    if applicant and applicant.get("email"):
+        await send_email_notification(
+            to_email=applicant["email"],
+            subject=f"Reimbursement Rejected - INR {reimbursement['amount']}",
+            body=f"Your reimbursement request for INR {reimbursement['amount']} ({reimbursement['category']}) has been rejected by {user.name}." + (f"\n\nReason: {comments}" if comments else "")
+        )
     
     return {"message": "Reimbursement rejected"}
 
@@ -3731,10 +3757,23 @@ async def mark_reimbursement_paid(reimbursement_id: str, session_token: Optional
     if user.role not in ["admin", "finance"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    reimbursement = await db.reimbursements.find_one({"reimbursement_id": reimbursement_id}, {"_id": 0})
+    if not reimbursement:
+        raise HTTPException(status_code=404, detail="Reimbursement not found")
+    
     await db.reimbursements.update_one(
         {"reimbursement_id": reimbursement_id},
         {"$set": {"status": "paid"}}
     )
+    
+    # Send email notification (demo mode)
+    applicant = await db.users.find_one({"user_id": reimbursement["user_id"]}, {"_id": 0})
+    if applicant and applicant.get("email"):
+        await send_email_notification(
+            to_email=applicant["email"],
+            subject=f"Reimbursement Paid - INR {reimbursement['amount']}",
+            body=f"Your reimbursement request for INR {reimbursement['amount']} ({reimbursement['category']}) has been marked as paid."
+        )
     
     return {"message": "Reimbursement marked as paid"}
 
