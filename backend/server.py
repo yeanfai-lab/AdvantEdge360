@@ -294,6 +294,127 @@ class ActiveTimer(BaseModel):
     start_time: datetime
     description: Optional[str] = None
 
+# ========== PHASE 2: TEAM MANAGEMENT MODELS ==========
+
+# Leave Application
+class LeaveApplication(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    leave_id: str
+    user_id: str
+    user_name: str
+    leave_type: str  # casual, sick, earned, unpaid, wfh
+    start_date: str
+    end_date: str
+    days: int
+    reason: str
+    status: str = "pending"  # pending, approved, rejected
+    approved_by: Optional[str] = None
+    approver_comments: Optional[str] = None
+    created_at: datetime
+
+class LeaveCreate(BaseModel):
+    leave_type: str
+    start_date: str
+    end_date: str
+    reason: str
+
+# Reimbursement
+class Reimbursement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    reimbursement_id: str
+    user_id: str
+    user_name: str
+    category: str  # travel, equipment, office_supplies, client_entertainment, other
+    amount: float
+    description: str
+    receipt_url: Optional[str] = None
+    date: str
+    project_id: Optional[str] = None
+    status: str = "pending"  # pending, approved, rejected, paid
+    approved_by: Optional[str] = None
+    approver_comments: Optional[str] = None
+    created_at: datetime
+
+class ReimbursementCreate(BaseModel):
+    category: str
+    amount: float
+    description: str
+    date: str
+    project_id: Optional[str] = None
+
+# Performance Review
+class PerformanceReview(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    review_id: str
+    user_id: str
+    user_name: str
+    reviewer_id: str
+    reviewer_name: str
+    review_period: str  # e.g., "Q1 2025", "2025"
+    overall_rating: int  # 1-5
+    strengths: str
+    areas_for_improvement: str
+    goals: str
+    comments: str
+    status: str = "draft"  # draft, submitted, acknowledged
+    created_at: datetime
+
+class PerformanceReviewCreate(BaseModel):
+    user_id: str
+    review_period: str
+    overall_rating: int
+    strengths: str
+    areas_for_improvement: str
+    goals: str
+    comments: str
+
+# Onboarding Form
+class OnboardingForm(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    form_id: str
+    user_id: str
+    status: str = "pending"  # pending, submitted, approved
+    
+    # Personal Info
+    full_name: str
+    date_of_birth: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    
+    # Bank Details
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    
+    # Education
+    education: List[dict] = []  # [{degree, institution, year, grade}]
+    
+    # Work Experience
+    work_experience: List[dict] = []  # [{company, role, duration, responsibilities}]
+    
+    # Documents
+    documents: List[dict] = []  # [{doc_type, file_url, uploaded_at}]
+    
+    created_at: datetime
+    submitted_at: Optional[datetime] = None
+
+class OnboardingFormCreate(BaseModel):
+    full_name: str
+    date_of_birth: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    education: List[dict] = []
+    work_experience: List[dict] = []
+
 # ========== HELPER FUNCTIONS ==========
 
 async def get_user_from_token(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
