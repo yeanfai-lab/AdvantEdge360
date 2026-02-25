@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../lib/utils';
@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Progress } from '../components/ui/progress';
 import { 
   ArrowLeft, Plus, CheckSquare, Clock, AlertCircle, 
-  MessageSquare, Send, Check, X, Edit, Trash2, Calendar
+  MessageSquare, Send, Check, X, Edit, Trash2, Calendar,
+  Play, Square, ChevronDown, ChevronRight, CornerDownRight, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,6 +32,12 @@ const priorities = [
   { id: 'urgent', label: 'Urgent', color: 'bg-red-500/20 text-red-600' }
 ];
 
+const formatTime = (minutes) => {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+};
+
 export const ProjectDetailPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -42,8 +49,14 @@ export const ProjectDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [isTaskDialog, setIsTaskDialog] = useState(false);
   const [isTaskDetailDialog, setIsTaskDetailDialog] = useState(false);
+  const [isSubtaskDialog, setIsSubtaskDialog] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [expandedTasks, setExpandedTasks] = useState({});
+  const [activeTimer, setActiveTimer] = useState(null);
+  const [timerElapsed, setTimerElapsed] = useState(0);
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
@@ -53,11 +66,99 @@ export const ProjectDetailPage = () => {
     end_date: '',
     reviewer_id: ''
   });
+  const [subtaskForm, setSubtaskForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    assigned_to: ''
+  });
 
   const fetchData = async () => {
     try {
-      const [projectRes, tasksRes, teamRes, statsRes] = await Promise.all([
+      const [projectRes, tasksRes, teamRes, statsRes, timerRes] = await Promise.all([
         axios.get(`${API_URL}/projects/${projectId}`, { withCredentials: true }),
+        axios.get(`${API_URL}/tasks?project_id=${projectId}`, { withCredentials: true }),
+        axios.get(`${API_URL}/team`, { withCredentials: true }),
+        axios.get(`${API_URL}/projects/${projectId}/stats`, { withCredentials: true }),
+        axios.get(`${API_URL}/timer/active`, { withCredentials: true })
+      ]);
+      setProject(projectRes.data);
+      setTasks(tasksRes.data);
+      setTeamMembers(teamRes.data);
+      setStats(statsRes.data);
+      if (timerRes.data.active) {
+        setActiveTimer(timerRes.data);
+        setTimerElapsed(timerRes.data.elapsed_minutes);
+      }
+    } catch (error) {
+      toast.error('Failed to load project');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [projectId]);
+
+  // Timer tick effect
+  useEffect(() => {
+    let interval;
+    if (activeTimer) {
+      interval = setInterval(() => {
+        const start = new Date(activeTimer.start_time);
+        const now = new Date();
+        const elapsed = Math.floor((now - start) / 60000);
+        setTimerElapsed(elapsed);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [activeTimer]);
+
+  const handleStartTimer = async (taskId) => {
+    try {
+      const res = await axios.post(`${API_URL}/timer/start`, null, {
+        params: { task_id: taskId },
+        withCredentials: true
+      });
+      setActiveTimer({
+        active: true,
+        task_id: taskId,
+        task_title: res.data.task_title,
+        start_time: res.data.start_time
+      });
+      setTimerElapsed(0);
+      toast.success('Timer started');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to start timer');
+    }
+  };
+
+  const handleStopTimer = async () => {
+    try {
+      const res = await axios.post(`${API_URL}/timer/stop`, null, {
+        params: { billable: true },
+        withCredentials: true
+      });
+      toast.success(`Timer stopped - ${formatTime(res.data.duration_minutes)} logged`);
+      setActiveTimer(null);
+      setTimerElapsed(0);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to stop timer');
+    }
+  };
+
+  const handleCancelTimer = async () => {
+    try {
+      await axios.delete(`${API_URL}/timer/cancel`, { withCredentials: true });
+      setActiveTimer(null);
+      setTimerElapsed(0);
+      toast.success('Timer cancelled');
+    } catch (error) {
+      toast.error('Failed to cancel timer');
+    }
+  };
         axios.get(`${API_URL}/tasks?project_id=${projectId}`, { withCredentials: true }),
         axios.get(`${API_URL}/team`, { withCredentials: true }),
         axios.get(`${API_URL}/projects/${projectId}/stats`, { withCredentials: true })
