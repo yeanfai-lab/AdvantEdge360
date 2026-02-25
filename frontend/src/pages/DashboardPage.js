@@ -255,6 +255,72 @@ export const DashboardPage = () => {
         </Card>
       </div>
 
+      {/* Pending Reviews Section */}
+      {pendingReviews.length > 0 && (
+        <Card className="p-6 mb-6 border-purple-500/50" data-testid="pending-reviews-section">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-purple-500" />
+              <h3 className="text-xl font-heading font-semibold">Pending Reviews</h3>
+              <span className="px-2 py-0.5 text-xs font-bold bg-purple-500/20 text-purple-600 rounded-full">
+                {pendingReviews.length}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {pendingReviews.map((task) => (
+              <div 
+                key={task.task_id} 
+                className="flex items-center justify-between p-3 rounded-lg border border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 cursor-pointer transition-colors"
+                onClick={() => navigate(`/projects/${task.project_id}`)}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium text-sm">{task.title}</h4>
+                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-600 rounded-full">Under Review</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{task.project_name || 'Unknown Project'}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Pending Proposal Approvals Section */}
+      {pendingApprovals.length > 0 && (
+        <Card className="p-6 mb-6 border-yellow-500/50" data-testid="pending-approvals-section">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-yellow-600" />
+              <h3 className="text-xl font-heading font-semibold">Pending Proposal Approvals</h3>
+              <span className="px-2 py-0.5 text-xs font-bold bg-yellow-500/20 text-yellow-600 rounded-full">
+                {pendingApprovals.length}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {pendingApprovals.map((proposal) => (
+              <div 
+                key={proposal.proposal_id} 
+                className="flex items-center justify-between p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer transition-colors"
+                onClick={() => navigate(`/proposals/${proposal.proposal_id}`)}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium text-sm">{proposal.title}</h4>
+                    <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-600 rounded-full">Pending Approval</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Client: {proposal.client_name}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* My Tasks Section */}
       <Card className="p-6 mb-6" data-testid="my-tasks-section">
         <div className="flex items-center justify-between mb-4">
