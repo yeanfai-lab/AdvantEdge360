@@ -194,6 +194,33 @@ export const ProjectDetailPage = () => {
     }
   };
 
+  const handleCreateSubtask = async (e) => {
+    e.preventDefault();
+    if (!selectedTask) return;
+    try {
+      const res = await axios.post(`${API_URL}/tasks`, {
+        project_id: projectId,
+        parent_task_id: selectedTask.task_id,
+        ...subtaskForm
+      }, { withCredentials: true });
+      
+      // Update parent task's subtasks array
+      await axios.patch(`${API_URL}/tasks/${selectedTask.task_id}`, {
+        subtasks: [...(selectedTask.subtasks || []), res.data.task_id]
+      }, { withCredentials: true });
+      
+      toast.success('Subtask created');
+      setIsSubtaskDialog(false);
+      setSubtaskForm({ title: '', description: '', priority: 'medium', assigned_to: '' });
+      fetchData();
+      // Refresh selected task
+      const taskRes = await axios.get(`${API_URL}/tasks/${selectedTask.task_id}`, { withCredentials: true });
+      setSelectedTask(taskRes.data);
+    } catch (error) {
+      toast.error('Failed to create subtask');
+    }
+  };
+
   const handleStatusChange = async (taskId, newStatus) => {
     try {
       await axios.patch(`${API_URL}/tasks/${taskId}`, { status: newStatus }, { withCredentials: true });
@@ -206,7 +233,7 @@ export const ProjectDetailPage = () => {
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_URL}/tasks/${selectedTask.task_id}/add-comment`,
         null,
         { params: { comment: newComment }, withCredentials: true }
@@ -215,9 +242,9 @@ export const ProjectDetailPage = () => {
       setNewComment('');
       
       // Refresh the task
-      const taskRes = await axios.get(`${API_URL}/tasks?project_id=${projectId}`, { withCredentials: true });
-      const updatedTask = taskRes.data.find(t => t.task_id === selectedTask.task_id);
-      setSelectedTask(updatedTask);
+      const taskRes = await axios.get(`${API_URL}/tasks/${selectedTask.task_id}`, { withCredentials: true });
+      setSelectedTask(taskRes.data);
+      fetchData();
       setTasks(taskRes.data);
     } catch (error) {
       toast.error('Failed to add comment');
