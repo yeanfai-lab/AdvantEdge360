@@ -533,7 +533,7 @@ export const FinancePage = () => {
                           }} required />
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Amount (₹)</label>
+                          <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
                           <Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} required />
                         </div>
                       </div>
@@ -800,7 +800,7 @@ export const FinancePage = () => {
                           </Select>
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Amount (₹)</label>
+                          <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
                           <Input type="number" value={cashflowExpenseForm.amount} onChange={(e) => setCashflowExpenseForm({ ...cashflowExpenseForm, amount: e.target.value })} required />
                         </div>
                       </div>
@@ -928,16 +928,16 @@ export const FinancePage = () => {
                       </Select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Monthly Salary (₹)</label>
+                      <label className="text-sm font-medium mb-2 block">Monthly Salary (INR)</label>
                       <Input type="number" value={salaryForm.monthly_salary} onChange={(e) => setSalaryForm({ ...salaryForm, monthly_salary: e.target.value })} required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium mb-2 block">Hourly Rate (₹)</label>
+                        <label className="text-sm font-medium mb-2 block">Hourly Rate (INR)</label>
                         <Input type="number" step="0.01" value={salaryForm.hourly_rate} onChange={(e) => setSalaryForm({ ...salaryForm, hourly_rate: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="text-sm font-medium mb-2 block">Daily Rate (₹)</label>
+                        <label className="text-sm font-medium mb-2 block">Daily Rate (INR)</label>
                         <Input type="number" step="0.01" value={salaryForm.daily_rate} onChange={(e) => setSalaryForm({ ...salaryForm, daily_rate: e.target.value })} required />
                       </div>
                     </div>
@@ -1053,7 +1053,7 @@ export const FinancePage = () => {
                 <Input type="number" step="0.01" value={feeForm.percentage} onChange={(e) => setFeeForm({ ...feeForm, percentage: e.target.value })} required />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Amount (₹)</label>
+                <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
                 <Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} required />
               </div>
             </div>
