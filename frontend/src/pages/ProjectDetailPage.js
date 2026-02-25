@@ -379,6 +379,33 @@ export const ProjectDetailPage = () => {
     }
   };
 
+  const handleUpdateTask = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.patch(`${API_URL}/tasks/${selectedTask.task_id}`, editTaskForm, { withCredentials: true });
+      toast.success('Task updated');
+      setIsEditTaskDialog(false);
+      fetchData();
+      // Refresh selected task
+      const res = await axios.get(`${API_URL}/tasks/${selectedTask.task_id}`, { withCredentials: true });
+      setSelectedTask(res.data);
+    } catch (error) {
+      toast.error('Failed to update task');
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Delete this task and all its subtasks? This cannot be undone.')) return;
+    try {
+      await axios.delete(`${API_URL}/tasks/${taskId}`, { withCredentials: true });
+      toast.success('Task deleted');
+      setIsTaskDetailDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete task');
+    }
+  };
+
   return (
     <div data-testid="project-detail-page" className="pt-12">
       <div className="mb-6">
