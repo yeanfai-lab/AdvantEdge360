@@ -49,6 +49,39 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - **Pending Team Requests Panel** (Admin/Manager) for leaves/reimbursements
 - **Team Tasks Overview**: 
   - Filter by Status/Team Member/Project
+  - **Shows only active statuses**: Assigned, In Progress, On Hold, Under Review
+  - Excludes Not Started and Completed tasks
+- Quick Actions matching page forms (with Internal task option)
+- Pending Reviews and Proposal Approvals sections
+
+### 6. Team Management
+- **Roles** (4 roles only):
+  - **Admin**: Full access, can invite team members
+  - **Manager**: Project management with financial access, can invite team members
+  - **Team Lead**: Team coordination and management (can manage team, cannot invite)
+  - **Team Member**: Own tasks only
+- **Team Invitation Workflow**:
+  - Admin/Manager can invite new team members via email
+  - Invitations stored with role assignment
+  - Invited user gets assigned role automatically on signup
+  - Copy invitation link, resend, or cancel pending invitations
+  - Email notifications in DEMO MODE (stored but not sent)
+- **First User**: Automatically becomes Admin
+- **Leave Applications** (separate page):
+  - Types: Casual, Sick, Earned/Annual, Unpaid, Work from Home
+  - **Calendar View** by month/year showing team leaves and public holidays
+  - **Public Holidays CRUD** (Admin only)
+  - **Leave Accrual Policies CRUD** - define accrual per month per leave type
+  - **Leave Balances** - calculated from accrual based on date of joining
+  - Negative balance allowed
+  - **Email Notifications** on approval/rejection (DEMO MODE)
+- **Reimbursements** (separate page):
+  - Categories: Travel, Equipment, Office Supplies, Client Entertainment, Other
+  - **Receipt Upload** (JPG, PNG, PDF - max 5MB)
+  - **Project vs Internal** tagging
+  - Project-tagged reimbursements show in Finance profitability/cash flow
+  - **Email Notifications** on approval/rejection/paid (DEMO MODE) 
+  - Filter by Status/Team Member/Project
   - **Excludes Not Started and Completed tasks** - shows only active work
 - Quick Actions matching page forms (with Internal task option)
 - Pending Reviews and Proposal Approvals sections
