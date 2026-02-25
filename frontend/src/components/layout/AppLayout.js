@@ -166,12 +166,15 @@ export const AppLayout = ({ children }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-heading font-bold">AdvantEdge360</h2>
+            <div className="flex items-center justify-between p-4 border-b bg-slate-900">
+              <div className="flex flex-col items-center">
+                <img src="/logo.png" alt="AdvantEdge Advisory" className="h-10 w-auto" />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(false)}
+                className="text-white hover:bg-slate-800"
               >
                 <X className="h-5 w-5" />
               </Button>
