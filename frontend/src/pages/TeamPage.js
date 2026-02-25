@@ -386,6 +386,118 @@ export const TeamPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Invite Team Member Dialog */}
+      <Dialog open={isInviteDialog} onOpenChange={setIsInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite Team Member</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSendInvitation} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email Address *</label>
+              <Input
+                type="email"
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                placeholder="email@example.com"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Full Name *</label>
+              <Input
+                value={inviteForm.name}
+                onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Role</label>
+              <Select value={inviteForm.role} onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${roleColors[role.id]?.split(' ')[0] || 'bg-muted'}`}></span>
+                        {formatRole(role.id)} - {role.description}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
+              <p>An email invitation will be sent to the recipient with a signup link. They will be assigned the selected role upon signing up.</p>
+              <p className="mt-1 text-xs opacity-75">Note: Email is currently in demo mode - invitation will be stored but not actually sent.</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsInviteDialog(false)}>Cancel</Button>
+              <Button type="submit">
+                <Send className="h-4 w-4 mr-2" />
+                Send Invitation
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Invitations Section */}
+      {canInviteTeam && invitations.length > 0 && (
+        <Card className="p-6 mb-6">
+          <h3 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Pending Invitations
+            <Badge variant="secondary" className="ml-2">{invitations.filter(i => i.status === 'pending').length} pending</Badge>
+          </h3>
+          <div className="space-y-3">
+            {invitations.map((invitation) => (
+              <div key={invitation.invitation_id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${invitationStatusColors[invitation.status]}`}>
+                    {invitation.status === 'pending' && <Clock className="h-5 w-5" />}
+                    {invitation.status === 'accepted' && <CheckCircle className="h-5 w-5" />}
+                    {invitation.status === 'expired' && <XCircle className="h-5 w-5" />}
+                    {invitation.status === 'cancelled' && <XCircle className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <p className="font-medium">{invitation.name}</p>
+                    <p className="text-sm text-muted-foreground">{invitation.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className={roleColors[invitation.role] || 'bg-muted'}>{formatRole(invitation.role)}</Badge>
+                      <Badge className={invitationStatusColors[invitation.status]}>{invitation.status}</Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {invitation.status === 'pending' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => copyInvitationLink(invitation.token)} title="Copy invitation link">
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleResendInvitation(invitation.invitation_id)} title="Resend invitation">
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleCancelInvitation(invitation.invitation_id)} title="Cancel invitation">
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                  {invitation.status === 'expired' && (
+                    <Button size="sm" variant="outline" onClick={() => handleResendInvitation(invitation.invitation_id)}>
+                      <RefreshCw className="h-4 w-4 mr-1" /> Resend
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
