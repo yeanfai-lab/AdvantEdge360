@@ -4622,25 +4622,35 @@ async def get_project_performance(session_token: Optional[str] = Cookie(None), a
     user = await get_user_from_token(session_token, authorization)
     
     projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
-    performance_data = []
     
+    # Optimized: Get all task counts per project in one query
+    task_counts_agg = await db.tasks.aggregate([
+        {"$group": {
+            "_id": "$project_id",
+            "total": {"$sum": 1},
+            "completed": {"$sum": {"$cond": [{"$eq": ["$status", "done"]}, 1, 0]}}
+        }}
+    ]).to_list(1000)
+    task_counts_map = {t["_id"]: {"total": t["total"], "completed": t["completed"]} for t in task_counts_agg}
+    
+    # Optimized: Get time logged per project in one query
+    project_time_agg = await db.time_logs.aggregate([
+        {"$group": {"_id": "$project_id", "total_minutes": {"$sum": "$duration_minutes"}}}
+    ]).to_list(1000)
+    project_time_map = {p["_id"]: p["total_minutes"] / 60 for p in project_time_agg}
+    
+    performance_data = []
     for project in projects:
-        tasks = await db.tasks.find({"project_id": project["project_id"]}, {"_id": 0}).to_list(1000)
-        completed_tasks = [t for t in tasks if t.get("status") == "done"]
-        
-        time_logs = await db.time_logs.find({}, {"_id": 0}).to_list(10000)
-        project_time = sum(
-            log.get("duration_minutes", 0) 
-            for log in time_logs 
-            if log.get("task_id") in [t.get("task_id") for t in tasks]
-        ) / 60
+        project_id = project["project_id"]
+        task_data = task_counts_map.get(project_id, {"total": 0, "completed": 0})
+        project_time = project_time_map.get(project_id, 0)
         
         performance_data.append({
-            "project_id": project["project_id"],
+            "project_id": project_id,
             "project_name": project["name"],
-            "total_tasks": len(tasks),
-            "completed_tasks": len(completed_tasks),
-            "completion_rate": (len(completed_tasks) / len(tasks) * 100) if tasks else 0,
+            "total_tasks": task_data["total"],
+            "completed_tasks": task_data["completed"],
+            "completion_rate": (task_data["completed"] / task_data["total"] * 100) if task_data["total"] else 0,
             "total_hours": round(project_time, 2),
             "budget": project.get("budget", 0),
             "status": project.get("status")
@@ -4653,21 +4663,35 @@ async def get_team_productivity(session_token: Optional[str] = Cookie(None), aut
     user = await get_user_from_token(session_token, authorization)
     
     team_members = await db.users.find({}, {"_id": 0}).to_list(1000)
-    productivity_data = []
     
+    # Optimized: Get all task counts per user in one query
+    user_task_agg = await db.tasks.aggregate([
+        {"$group": {
+            "_id": "$assigned_to",
+            "total": {"$sum": 1},
+            "completed": {"$sum": {"$cond": [{"$eq": ["$status", "done"]}, 1, 0]}}
+        }}
+    ]).to_list(1000)
+    user_task_map = {u["_id"]: {"total": u["total"], "completed": u["completed"]} for u in user_task_agg}
+    
+    # Optimized: Get time logged per user in one query
+    user_time_agg = await db.time_logs.aggregate([
+        {"$group": {"_id": "$user_id", "total_minutes": {"$sum": "$duration_minutes"}}}
+    ]).to_list(1000)
+    user_time_map = {u["_id"]: u["total_minutes"] / 60 for u in user_time_agg}
+    
+    productivity_data = []
     for member in team_members:
-        tasks = await db.tasks.find({"assigned_to": member["user_id"]}, {"_id": 0}).to_list(1000)
-        completed_tasks = [t for t in tasks if t.get("status") == "done"]
-        
-        time_logs = await db.time_logs.find({"user_id": member["user_id"]}, {"_id": 0}).to_list(10000)
-        total_hours = sum(log.get("duration_minutes", 0) for log in time_logs) / 60
+        user_id = member["user_id"]
+        task_data = user_task_map.get(user_id, {"total": 0, "completed": 0})
+        total_hours = user_time_map.get(user_id, 0)
         
         productivity_data.append({
-            "user_id": member["user_id"],
+            "user_id": user_id,
             "name": member["name"],
             "role": member["role"],
-            "total_tasks": len(tasks),
-            "completed_tasks": len(completed_tasks),
+            "total_tasks": task_data["total"],
+            "completed_tasks": task_data["completed"],
             "total_hours": round(total_hours, 2)
         })
     
