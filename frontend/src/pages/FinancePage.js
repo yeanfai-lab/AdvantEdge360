@@ -82,6 +82,9 @@ export const FinancePage = () => {
     amount: ''
   });
 
+  // Reimbursements state for project expenses
+  const [reimbursements, setReimbursements] = useState([]);
+
   useEffect(() => {
     if (user?.role && !['admin', 'manager', 'finance'].includes(user.role)) {
       setLoading(false);
@@ -92,13 +95,14 @@ export const FinancePage = () => {
 
   const fetchData = async () => {
     try {
-      const [projectsRes, logsRes, teamRes, feeRes, salaryRes, cashflowRes] = await Promise.all([
+      const [projectsRes, logsRes, teamRes, feeRes, salaryRes, cashflowRes, reimbursementsRes] = await Promise.all([
         axios.get(`${API_URL}/projects`, { withCredentials: true }),
         axios.get(`${API_URL}/time-logs`, { withCredentials: true }),
         axios.get(`${API_URL}/team`, { withCredentials: true }),
         axios.get(`${API_URL}/fee-structure`, { withCredentials: true }),
         axios.get(`${API_URL}/team-salaries`, { withCredentials: true }),
-        axios.get(`${API_URL}/cashflow-expenses`, { withCredentials: true })
+        axios.get(`${API_URL}/cashflow-expenses`, { withCredentials: true }),
+        axios.get(`${API_URL}/reimbursements`, { withCredentials: true })
       ]);
       setProjects(projectsRes.data);
       setTimeLogs(logsRes.data);
@@ -106,6 +110,7 @@ export const FinancePage = () => {
       setFeeStructure(feeRes.data);
       setTeamSalaries(salaryRes.data);
       setCashflowExpenses(cashflowRes.data);
+      setReimbursements(reimbursementsRes.data.filter(r => r.status !== 'rejected'));
     } catch (error) {
       toast.error('Failed to load finance data');
     } finally {
