@@ -352,8 +352,34 @@ export const ProjectDetailPage = () => {
   const isManager = user?.role && ['admin', 'manager', 'team_lead'].includes(user.role);
   const isReviewer = selectedTask?.reviewer_id === user?.user_id;
 
+  const handleDeleteProject = async () => {
+    if (!window.confirm('Are you sure you want to delete this project and all its tasks? This action cannot be undone.')) return;
+    try {
+      await axios.delete(`${API_URL}/projects/${projectId}`, { withCredentials: true });
+      toast.success('Project deleted');
+      navigate('/projects');
+    } catch (error) {
+      toast.error('Failed to delete project');
+    }
+  };
+
+  const [isEditProjectDialog, setIsEditProjectDialog] = useState(false);
+  const [projectForm, setProjectForm] = useState({});
+
+  const handleUpdateProject = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.patch(`${API_URL}/projects/${projectId}`, projectForm, { withCredentials: true });
+      toast.success('Project updated');
+      setIsEditProjectDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update project');
+    }
+  };
+
   return (
-    <div data-testid="project-detail-page">
+    <div data-testid="project-detail-page" className="pt-12">
       <div className="mb-6">
         <Button variant="ghost" onClick={() => navigate('/projects')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -368,9 +394,16 @@ export const ProjectDetailPage = () => {
             <span className="px-3 py-1 text-sm font-semibold rounded-full bg-primary/20 text-primary">
               {project.status}
             </span>
+            <Button variant="outline" onClick={() => { setProjectForm(project); setIsEditProjectDialog(true); }}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
             <Button onClick={() => setIsTaskDialog(true)} data-testid="add-task-btn">
               <Plus className="mr-2 h-4 w-4" />
               Add Task
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProject}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
