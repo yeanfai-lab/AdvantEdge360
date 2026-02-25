@@ -3600,6 +3600,15 @@ async def approve_leave(leave_id: str, comments: Optional[str] = None, session_t
         {"$set": {"status": "approved", "approved_by": user.user_id, "approver_comments": comments}}
     )
     
+    # Send email notification (demo mode)
+    applicant = await db.users.find_one({"user_id": leave["user_id"]}, {"_id": 0})
+    if applicant and applicant.get("email"):
+        await send_email_notification(
+            to_email=applicant["email"],
+            subject=f"Leave Application Approved - {leave['leave_type'].title()}",
+            body=f"Your leave application from {leave['start_date']} to {leave['end_date']} has been approved by {user.name}." + (f"\n\nComments: {comments}" if comments else "")
+        )
+    
     return {"message": "Leave approved"}
 
 @api_router.patch("/leaves/{leave_id}/reject")
@@ -3609,10 +3618,25 @@ async def reject_leave(leave_id: str, comments: Optional[str] = None, session_to
     if user.role not in ["admin", "manager", "supervisor"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    leave = await db.leaves.find_one({"leave_id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave application not found")
+    
     await db.leaves.update_one(
         {"leave_id": leave_id},
         {"$set": {"status": "rejected", "approved_by": user.user_id, "approver_comments": comments}}
     )
+    
+    # Send email notification (demo mode)
+    applicant = await db.users.find_one({"user_id": leave["user_id"]}, {"_id": 0})
+    if applicant and applicant.get("email"):
+        await send_email_notification(
+            to_email=applicant["email"],
+            subject=f"Leave Application Rejected - {leave['leave_type'].title()}",
+            body=f"Your leave application from {leave['start_date']} to {leave['end_date']} has been rejected by {user.name}." + (f"\n\nReason: {comments}" if comments else "")
+        )
+    
+    return {"message": "Leave rejected"}
     
     return {"message": "Leave rejected"}
 
