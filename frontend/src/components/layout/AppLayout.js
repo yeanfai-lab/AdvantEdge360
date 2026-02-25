@@ -16,8 +16,8 @@ import {
   Menu,
   X,
   Calendar,
-  Star,
-  UserPlus
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -29,10 +29,15 @@ const navigation = [
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
-  { name: 'Team', href: '/team', icon: Users },
-  { name: 'Leave & Expenses', href: '/leave-reimbursement', icon: Calendar },
-  { name: 'Reviews', href: '/performance-reviews', icon: Star },
-  { name: 'Onboarding', href: '/onboarding', icon: UserPlus },
+  { 
+    name: 'Team', 
+    href: '/team', 
+    icon: Users,
+    children: [
+      { name: 'Team Members', href: '/team' },
+      { name: 'Leave & Expenses', href: '/leave-reimbursement', icon: Calendar }
+    ]
+  },
   { name: 'Finance', href: '/finance', icon: DollarSign },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
