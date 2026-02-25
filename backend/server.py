@@ -464,17 +464,26 @@ async def create_session(payload: SessionCreate, response: Response):
         resp.raise_for_status()
         data = resp.json()
         
+        # Super Admin email from environment variable
+        super_admin_email = os.environ.get("SUPER_ADMIN_EMAIL", "").lower().strip()
+        is_super_admin = data["email"].lower().strip() == super_admin_email and super_admin_email != ""
+        
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         existing_user = await db.users.find_one({"email": data["email"]}, {"_id": 0})
         
         if existing_user:
             user_id = existing_user["user_id"]
+            update_data = {
+                "name": data["name"],
+                "picture": data.get("picture")
+            }
+            # If super admin, always ensure admin role
+            if is_super_admin and existing_user.get("role") != "admin":
+                update_data["role"] = "admin"
+            
             await db.users.update_one(
                 {"user_id": user_id},
-                {"$set": {
-                    "name": data["name"],
-                    "picture": data.get("picture")
-                }}
+                {"$set": update_data}
             )
         else:
             # Check if there's a pending invitation for this email
@@ -483,9 +492,11 @@ async def create_session(payload: SessionCreate, response: Response):
                 "status": "pending"
             })
             
-            # Determine role - use invitation role if exists, otherwise first user is admin
+            # Determine role - super admin > invitation > first user > default
             user_count = await db.users.count_documents({})
-            if invitation:
+            if is_super_admin:
+                role = "admin"  # Super admin always gets admin
+            elif invitation:
                 role = invitation["role"]
                 # Mark invitation as accepted
                 await db.team_invitations.update_one(
