@@ -1804,6 +1804,222 @@ async def delete_team_member(user_id: str, session_token: Optional[str] = Cookie
     return {"message": "Team member deleted"}
 
 
+# ========== TEAM INVITATION SYSTEM ==========
+
+class TeamInvitation(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    invitation_id: str
+    email: str
+    name: str
+    role: str = "team_member"
+    invited_by: str
+    invited_by_name: str
+    status: str = "pending"  # pending, accepted, expired, cancelled
+    token: str
+    expires_at: datetime
+    created_at: datetime
+    accepted_at: Optional[datetime] = None
+
+class InvitationCreate(BaseModel):
+    email: str
+    name: str
+    role: str = "team_member"
+
+@api_router.post("/team/invitations")
+async def create_invitation(payload: InvitationCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    """Send invitation to a new team member (Admin/Manager only)"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Check if user can invite
+    role_config = ROLES.get(user.role, ROLES["team_member"])
+    if not role_config.get("can_invite_team", False):
+        raise HTTPException(status_code=403, detail="You don't have permission to invite team members")
+    
+    # Check if email already exists as user
+    existing_user = await db.users.find_one({"email": payload.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="A user with this email already exists")
+    
+    # Check if there's already a pending invitation
+    existing_invitation = await db.team_invitations.find_one({
+        "email": payload.email,
+        "status": "pending"
+    })
+    if existing_invitation:
+        raise HTTPException(status_code=400, detail="An invitation is already pending for this email")
+    
+    # Validate role
+    if payload.role not in ROLES:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    
+    invitation_id = f"inv_{uuid.uuid4().hex[:12]}"
+    token = uuid.uuid4().hex
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    invitation_doc = {
+        "invitation_id": invitation_id,
+        "email": payload.email,
+        "name": payload.name,
+        "role": payload.role,
+        "invited_by": user.user_id,
+        "invited_by_name": user.name,
+        "status": "pending",
+        "token": token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.team_invitations.insert_one(invitation_doc)
+    
+    # Store email notification (demo mode)
+    email_doc = {
+        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+        "type": "team_invitation",
+        "recipient_email": payload.email,
+        "recipient_name": payload.name,
+        "subject": f"You're invited to join AdvantEdge360",
+        "body": f"Hi {payload.name},\n\n{user.name} has invited you to join AdvantEdge360 as a {payload.role.replace('_', ' ').title()}.\n\nClick the link below to accept your invitation and set up your account:\n\n[Invitation Link with token: {token}]\n\nThis invitation expires in 7 days.\n\nBest regards,\nAdvantEdge360 Team",
+        "status": "pending",
+        "demo_mode": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.email_notifications.insert_one(email_doc)
+    
+    return {
+        "invitation_id": invitation_id,
+        "email": payload.email,
+        "name": payload.name,
+        "role": payload.role,
+        "token": token,
+        "expires_at": expires_at.isoformat(),
+        "demo_mode": True,
+        "message": "Invitation created. Email notification stored (demo mode - not actually sent)"
+    }
+
+@api_router.get("/team/invitations")
+async def get_invitations(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    """Get all team invitations (Admin/Manager only)"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    role_config = ROLES.get(user.role, ROLES["team_member"])
+    if not role_config.get("can_invite_team", False):
+        raise HTTPException(status_code=403, detail="You don't have permission to view invitations")
+    
+    invitations = await db.team_invitations.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Check for expired invitations and update status
+    now = datetime.now(timezone.utc)
+    for inv in invitations:
+        if inv["status"] == "pending":
+            expires_at = datetime.fromisoformat(inv["expires_at"].replace("Z", "+00:00")) if isinstance(inv["expires_at"], str) else inv["expires_at"]
+            if now > expires_at:
+                await db.team_invitations.update_one(
+                    {"invitation_id": inv["invitation_id"]},
+                    {"$set": {"status": "expired"}}
+                )
+                inv["status"] = "expired"
+    
+    return invitations
+
+@api_router.delete("/team/invitations/{invitation_id}")
+async def cancel_invitation(invitation_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    """Cancel a pending invitation (Admin/Manager only)"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    role_config = ROLES.get(user.role, ROLES["team_member"])
+    if not role_config.get("can_invite_team", False):
+        raise HTTPException(status_code=403, detail="You don't have permission to cancel invitations")
+    
+    invitation = await db.team_invitations.find_one({"invitation_id": invitation_id})
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    
+    if invitation["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Can only cancel pending invitations")
+    
+    await db.team_invitations.update_one(
+        {"invitation_id": invitation_id},
+        {"$set": {"status": "cancelled"}}
+    )
+    
+    return {"message": "Invitation cancelled"}
+
+@api_router.post("/team/invitations/{invitation_id}/resend")
+async def resend_invitation(invitation_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    """Resend an invitation email (Admin/Manager only)"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    role_config = ROLES.get(user.role, ROLES["team_member"])
+    if not role_config.get("can_invite_team", False):
+        raise HTTPException(status_code=403, detail="You don't have permission to resend invitations")
+    
+    invitation = await db.team_invitations.find_one({"invitation_id": invitation_id})
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    
+    # Generate new token and extend expiry
+    new_token = uuid.uuid4().hex
+    new_expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.team_invitations.update_one(
+        {"invitation_id": invitation_id},
+        {"$set": {
+            "token": new_token,
+            "expires_at": new_expires_at.isoformat(),
+            "status": "pending"
+        }}
+    )
+    
+    # Store new email notification
+    email_doc = {
+        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+        "type": "team_invitation_resend",
+        "recipient_email": invitation["email"],
+        "recipient_name": invitation["name"],
+        "subject": f"Reminder: You're invited to join AdvantEdge360",
+        "body": f"Hi {invitation['name']},\n\nThis is a reminder that {user.name} has invited you to join AdvantEdge360.\n\nNew invitation token: {new_token}\n\nThis invitation expires in 7 days.\n\nBest regards,\nAdvantEdge360 Team",
+        "status": "pending",
+        "demo_mode": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.email_notifications.insert_one(email_doc)
+    
+    return {
+        "message": "Invitation resent",
+        "new_token": new_token,
+        "expires_at": new_expires_at.isoformat(),
+        "demo_mode": True
+    }
+
+@api_router.get("/team/invitations/verify/{token}")
+async def verify_invitation(token: str):
+    """Verify an invitation token (public endpoint for signup)"""
+    invitation = await db.team_invitations.find_one({"token": token}, {"_id": 0})
+    
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invalid invitation token")
+    
+    if invitation["status"] != "pending":
+        raise HTTPException(status_code=400, detail=f"Invitation is {invitation['status']}")
+    
+    # Check expiry
+    expires_at = datetime.fromisoformat(invitation["expires_at"].replace("Z", "+00:00")) if isinstance(invitation["expires_at"], str) else invitation["expires_at"]
+    if datetime.now(timezone.utc) > expires_at:
+        await db.team_invitations.update_one(
+            {"invitation_id": invitation["invitation_id"]},
+            {"$set": {"status": "expired"}}
+        )
+        raise HTTPException(status_code=400, detail="Invitation has expired")
+    
+    return {
+        "valid": True,
+        "email": invitation["email"],
+        "name": invitation["name"],
+        "role": invitation["role"],
+        "invited_by_name": invitation["invited_by_name"]
+    }
+
+
 # ========== CLIENT MANAGEMENT MODELS & ROUTES ==========
 
 class Company(BaseModel):
