@@ -126,6 +126,11 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [x] Proposal action dropdown with workflow actions (Send for Approval, Send to Client, Confirm, Convert)
 - [x] Enhanced filtering on Tasks page (by priority, assignee, project)
 - [x] Global timer ribbon sticky positioning for better UX
+- [x] Full CRUD on Proposals - all fields inline editable (title, client, status, category, requirement, scope, description, amount)
+- [x] Full CRUD on Projects - Edit dialog with all fields
+- [x] Full CRUD on Tasks - Edit dialog with all fields (title, description, priority, status, assignee, reviewer, dates)
+- [x] Task deletion with confirmation
+- [x] Clean seed data: 1 company, 1 client, 1 proposal, 1 project, 2 tasks with 2 subtasks each
 
 ### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
