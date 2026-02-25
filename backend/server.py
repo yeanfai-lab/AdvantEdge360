@@ -2888,6 +2888,455 @@ async def delete_expense(expense_id: str, session_token: Optional[str] = Cookie(
     
     return {"message": "Expense deleted"}
 
+# ========== PHASE 2: TEAM MANAGEMENT ROUTES ==========
+
+# --- Leave Applications ---
+
+@api_router.post("/leaves", response_model=LeaveApplication)
+async def create_leave_application(payload: LeaveCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Calculate days
+    start = datetime.strptime(payload.start_date, "%Y-%m-%d")
+    end = datetime.strptime(payload.end_date, "%Y-%m-%d")
+    days = (end - start).days + 1
+    
+    leave_id = str(uuid.uuid4())
+    leave_doc = {
+        "leave_id": leave_id,
+        "user_id": user.user_id,
+        "user_name": user.name,
+        "leave_type": payload.leave_type,
+        "start_date": payload.start_date,
+        "end_date": payload.end_date,
+        "days": days,
+        "reason": payload.reason,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.leaves.insert_one(leave_doc)
+    
+    leave_doc["created_at"] = leave_doc["created_at"]
+    return LeaveApplication(**leave_doc)
+
+@api_router.get("/leaves")
+async def get_leave_applications(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Team members see only their own, supervisors/managers see team's
+    if user.role in ["admin", "manager", "supervisor"]:
+        leaves = await db.leaves.find({}, {"_id": 0}).to_list(1000)
+    else:
+        leaves = await db.leaves.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    
+    for leave in leaves:
+        if isinstance(leave['created_at'], str):
+            leave['created_at'] = datetime.fromisoformat(leave['created_at'])
+    
+    return leaves
+
+@api_router.patch("/leaves/{leave_id}/approve")
+async def approve_leave(leave_id: str, comments: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "supervisor"]:
+        raise HTTPException(status_code=403, detail="Not authorized to approve leaves")
+    
+    leave = await db.leaves.find_one({"leave_id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave application not found")
+    
+    await db.leaves.update_one(
+        {"leave_id": leave_id},
+        {"$set": {"status": "approved", "approved_by": user.user_id, "approver_comments": comments}}
+    )
+    
+    return {"message": "Leave approved"}
+
+@api_router.patch("/leaves/{leave_id}/reject")
+async def reject_leave(leave_id: str, comments: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "supervisor"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.leaves.update_one(
+        {"leave_id": leave_id},
+        {"$set": {"status": "rejected", "approved_by": user.user_id, "approver_comments": comments}}
+    )
+    
+    return {"message": "Leave rejected"}
+
+@api_router.delete("/leaves/{leave_id}")
+async def delete_leave(leave_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    leave = await db.leaves.find_one({"leave_id": leave_id}, {"_id": 0})
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    
+    # Only owner can delete pending, admins can delete any
+    if leave["user_id"] != user.user_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if leave["status"] != "pending" and user.role != "admin":
+        raise HTTPException(status_code=400, detail="Cannot delete processed leave")
+    
+    await db.leaves.delete_one({"leave_id": leave_id})
+    return {"message": "Leave deleted"}
+
+# --- Reimbursements ---
+
+@api_router.post("/reimbursements", response_model=Reimbursement)
+async def create_reimbursement(payload: ReimbursementCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    reimbursement_id = str(uuid.uuid4())
+    reimbursement_doc = {
+        "reimbursement_id": reimbursement_id,
+        "user_id": user.user_id,
+        "user_name": user.name,
+        "category": payload.category,
+        "amount": payload.amount,
+        "description": payload.description,
+        "date": payload.date,
+        "project_id": payload.project_id,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.reimbursements.insert_one(reimbursement_doc)
+    
+    return Reimbursement(**reimbursement_doc)
+
+@api_router.get("/reimbursements")
+async def get_reimbursements(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role in ["admin", "manager", "supervisor", "finance"]:
+        reimbursements = await db.reimbursements.find({}, {"_id": 0}).to_list(1000)
+    else:
+        reimbursements = await db.reimbursements.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    
+    for r in reimbursements:
+        if isinstance(r['created_at'], str):
+            r['created_at'] = datetime.fromisoformat(r['created_at'])
+    
+    return reimbursements
+
+@api_router.patch("/reimbursements/{reimbursement_id}/approve")
+async def approve_reimbursement(reimbursement_id: str, comments: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "supervisor", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.reimbursements.update_one(
+        {"reimbursement_id": reimbursement_id},
+        {"$set": {"status": "approved", "approved_by": user.user_id, "approver_comments": comments}}
+    )
+    
+    return {"message": "Reimbursement approved"}
+
+@api_router.patch("/reimbursements/{reimbursement_id}/reject")
+async def reject_reimbursement(reimbursement_id: str, comments: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "supervisor", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.reimbursements.update_one(
+        {"reimbursement_id": reimbursement_id},
+        {"$set": {"status": "rejected", "approved_by": user.user_id, "approver_comments": comments}}
+    )
+    
+    return {"message": "Reimbursement rejected"}
+
+@api_router.patch("/reimbursements/{reimbursement_id}/mark-paid")
+async def mark_reimbursement_paid(reimbursement_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.reimbursements.update_one(
+        {"reimbursement_id": reimbursement_id},
+        {"$set": {"status": "paid"}}
+    )
+    
+    return {"message": "Reimbursement marked as paid"}
+
+@api_router.delete("/reimbursements/{reimbursement_id}")
+async def delete_reimbursement(reimbursement_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    r = await db.reimbursements.find_one({"reimbursement_id": reimbursement_id}, {"_id": 0})
+    if not r:
+        raise HTTPException(status_code=404, detail="Reimbursement not found")
+    
+    if r["user_id"] != user.user_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if r["status"] != "pending" and user.role != "admin":
+        raise HTTPException(status_code=400, detail="Cannot delete processed reimbursement")
+    
+    await db.reimbursements.delete_one({"reimbursement_id": reimbursement_id})
+    return {"message": "Reimbursement deleted"}
+
+# --- Performance Reviews ---
+
+@api_router.post("/performance-reviews", response_model=PerformanceReview)
+async def create_performance_review(payload: PerformanceReviewCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "supervisor"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create reviews")
+    
+    # Get the user being reviewed
+    reviewed_user = await db.users.find_one({"user_id": payload.user_id}, {"_id": 0})
+    if not reviewed_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    review_id = str(uuid.uuid4())
+    review_doc = {
+        "review_id": review_id,
+        "user_id": payload.user_id,
+        "user_name": reviewed_user["name"],
+        "reviewer_id": user.user_id,
+        "reviewer_name": user.name,
+        "review_period": payload.review_period,
+        "overall_rating": payload.overall_rating,
+        "strengths": payload.strengths,
+        "areas_for_improvement": payload.areas_for_improvement,
+        "goals": payload.goals,
+        "comments": payload.comments,
+        "status": "draft",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.performance_reviews.insert_one(review_doc)
+    
+    return PerformanceReview(**review_doc)
+
+@api_router.get("/performance-reviews")
+async def get_performance_reviews(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role in ["admin", "manager", "supervisor"]:
+        reviews = await db.performance_reviews.find({}, {"_id": 0}).to_list(1000)
+    else:
+        # Team members see only their own reviews
+        reviews = await db.performance_reviews.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    
+    for r in reviews:
+        if isinstance(r['created_at'], str):
+            r['created_at'] = datetime.fromisoformat(r['created_at'])
+    
+    return reviews
+
+@api_router.patch("/performance-reviews/{review_id}")
+async def update_performance_review(review_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    review = await db.performance_reviews.find_one({"review_id": review_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    # Only reviewer or admin can edit
+    if review["reviewer_id"] != user.user_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    allowed_fields = ["overall_rating", "strengths", "areas_for_improvement", "goals", "comments", "status"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    await db.performance_reviews.update_one({"review_id": review_id}, {"$set": filtered_updates})
+    return {"message": "Review updated"}
+
+@api_router.patch("/performance-reviews/{review_id}/submit")
+async def submit_performance_review(review_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    review = await db.performance_reviews.find_one({"review_id": review_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    if review["reviewer_id"] != user.user_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.performance_reviews.update_one(
+        {"review_id": review_id},
+        {"$set": {"status": "submitted"}}
+    )
+    
+    return {"message": "Review submitted"}
+
+@api_router.patch("/performance-reviews/{review_id}/acknowledge")
+async def acknowledge_performance_review(review_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    review = await db.performance_reviews.find_one({"review_id": review_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    # Only the reviewed person can acknowledge
+    if review["user_id"] != user.user_id:
+        raise HTTPException(status_code=403, detail="Only the reviewed person can acknowledge")
+    
+    await db.performance_reviews.update_one(
+        {"review_id": review_id},
+        {"$set": {"status": "acknowledged"}}
+    )
+    
+    return {"message": "Review acknowledged"}
+
+@api_router.delete("/performance-reviews/{review_id}")
+async def delete_performance_review(review_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can delete reviews")
+    
+    result = await db.performance_reviews.delete_one({"review_id": review_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    return {"message": "Review deleted"}
+
+# --- Onboarding Forms ---
+
+@api_router.post("/onboarding", response_model=OnboardingForm)
+async def create_onboarding_form(payload: OnboardingFormCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Check if form already exists
+    existing = await db.onboarding_forms.find_one({"user_id": user.user_id}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Onboarding form already exists")
+    
+    form_id = str(uuid.uuid4())
+    form_doc = {
+        "form_id": form_id,
+        "user_id": user.user_id,
+        "status": "pending",
+        "full_name": payload.full_name,
+        "date_of_birth": payload.date_of_birth,
+        "phone": payload.phone,
+        "address": payload.address,
+        "emergency_contact_name": payload.emergency_contact_name,
+        "emergency_contact_phone": payload.emergency_contact_phone,
+        "emergency_contact_relation": payload.emergency_contact_relation,
+        "bank_name": payload.bank_name,
+        "account_number": payload.account_number,
+        "ifsc_code": payload.ifsc_code,
+        "education": payload.education,
+        "work_experience": payload.work_experience,
+        "documents": [],
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.onboarding_forms.insert_one(form_doc)
+    
+    return OnboardingForm(**form_doc)
+
+@api_router.get("/onboarding")
+async def get_onboarding_forms(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role in ["admin", "manager", "supervisor"]:
+        forms = await db.onboarding_forms.find({}, {"_id": 0}).to_list(1000)
+    else:
+        forms = await db.onboarding_forms.find({"user_id": user.user_id}, {"_id": 0}).to_list(1)
+    
+    for form in forms:
+        if isinstance(form['created_at'], str):
+            form['created_at'] = datetime.fromisoformat(form['created_at'])
+    
+    return forms
+
+@api_router.get("/onboarding/my")
+async def get_my_onboarding_form(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    form = await db.onboarding_forms.find_one({"user_id": user.user_id}, {"_id": 0})
+    if not form:
+        return None
+    
+    if isinstance(form['created_at'], str):
+        form['created_at'] = datetime.fromisoformat(form['created_at'])
+    
+    return form
+
+@api_router.patch("/onboarding/{form_id}")
+async def update_onboarding_form(form_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    form = await db.onboarding_forms.find_one({"form_id": form_id}, {"_id": 0})
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+    
+    if form["user_id"] != user.user_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    allowed_fields = [
+        "full_name", "date_of_birth", "phone", "address",
+        "emergency_contact_name", "emergency_contact_phone", "emergency_contact_relation",
+        "bank_name", "account_number", "ifsc_code",
+        "education", "work_experience"
+    ]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    await db.onboarding_forms.update_one({"form_id": form_id}, {"$set": filtered_updates})
+    return {"message": "Form updated"}
+
+@api_router.patch("/onboarding/{form_id}/submit")
+async def submit_onboarding_form(form_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    form = await db.onboarding_forms.find_one({"form_id": form_id}, {"_id": 0})
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+    
+    if form["user_id"] != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.onboarding_forms.update_one(
+        {"form_id": form_id},
+        {"$set": {"status": "submitted", "submitted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Form submitted"}
+
+@api_router.patch("/onboarding/{form_id}/approve")
+async def approve_onboarding_form(form_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.onboarding_forms.update_one(
+        {"form_id": form_id},
+        {"$set": {"status": "approved"}}
+    )
+    
+    return {"message": "Form approved"}
+
+# --- Team Requests Summary ---
+
+@api_router.get("/team-requests/pending")
+async def get_pending_team_requests(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "supervisor"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    pending_leaves = await db.leaves.find({"status": "pending"}, {"_id": 0}).to_list(100)
+    pending_reimbursements = await db.reimbursements.find({"status": "pending"}, {"_id": 0}).to_list(100)
+    pending_onboarding = await db.onboarding_forms.find({"status": "submitted"}, {"_id": 0}).to_list(100)
+    
+    return {
+        "leaves": pending_leaves,
+        "reimbursements": pending_reimbursements,
+        "onboarding": pending_onboarding,
+        "total_pending": len(pending_leaves) + len(pending_reimbursements) + len(pending_onboarding)
+    }
+
 # ========== REPORTS & ANALYTICS ROUTES ==========
 
 @api_router.get("/reports/overview")
