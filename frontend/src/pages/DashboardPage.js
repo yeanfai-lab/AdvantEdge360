@@ -60,6 +60,9 @@ export const DashboardPage = () => {
     priority: 'medium'
   });
 
+  const [pendingReviews, setPendingReviews] = useState([]);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -68,7 +71,9 @@ export const DashboardPage = () => {
           axios.get(`${API_URL}/proposals`, { withCredentials: true }),
           axios.get(`${API_URL}/tasks`, { withCredentials: true }),
           axios.get(`${API_URL}/team`, { withCredentials: true }),
-          axios.get(`${API_URL}/dashboard/my-tasks`, { withCredentials: true })
+          axios.get(`${API_URL}/dashboard/my-tasks`, { withCredentials: true }),
+          axios.get(`${API_URL}/dashboard/pending-reviews`, { withCredentials: true }),
+          axios.get(`${API_URL}/dashboard/pending-approvals`, { withCredentials: true })
         ];
         
         // Only fetch team tasks for managers
@@ -78,7 +83,7 @@ export const DashboardPage = () => {
         }
         
         const responses = await Promise.all(requests);
-        const [projectsRes, proposalsRes, tasksRes, teamRes, myTasksRes] = responses;
+        const [projectsRes, proposalsRes, tasksRes, teamRes, myTasksRes, reviewsRes, approvalsRes] = responses;
 
         setStats({
           projects: projectsRes.data.length,
@@ -88,9 +93,11 @@ export const DashboardPage = () => {
         });
         setProjects(projectsRes.data);
         setMyTasks(myTasksRes.data);
+        setPendingReviews(reviewsRes.data);
+        setPendingApprovals(approvalsRes.data);
         
-        if (isManager && responses[5]) {
-          setTeamTasks(responses[5].data);
+        if (isManager && responses[7]) {
+          setTeamTasks(responses[7].data);
         }
       } catch (error) {
         console.error('Error fetching stats:', error);
