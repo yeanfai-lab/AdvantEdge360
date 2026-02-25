@@ -394,6 +394,30 @@ export const ProjectDetailPage = () => {
         </div>
       </div>
 
+      {/* Active Timer Banner */}
+      {activeTimer && (
+        <Card className="p-4 mb-6 bg-primary/10 border-primary">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <div>
+                <p className="font-medium">Timer Running: {activeTimer.task_title}</p>
+                <p className="text-sm text-muted-foreground">Elapsed: {formatTime(timerElapsed)}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleStopTimer} className="bg-green-500 hover:bg-green-600">
+                <Square className="mr-1 h-3 w-3" />
+                Stop & Log
+              </Button>
+              <Button size="sm" variant="ghost" onClick={handleCancelTimer}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Project Stats & Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         <Card className="lg:col-span-3 p-6">
