@@ -46,14 +46,5 @@ ROLES = {
         "can_edit_all": False,
         "can_delete_all": False,
         "description": "Own tasks only"
-    },
-    "finance": {
-        "level": 40,
-        "can_view_financial": True,
-        "can_manage_team": False,
-        "can_invite_team": False,
-        "can_edit_all": False,
-        "can_delete_all": False,
-        "description": "Financial data access only"
     }
 }
