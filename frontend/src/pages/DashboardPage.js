@@ -608,7 +608,7 @@ export const DashboardPage = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Budget (₹)</label>
+                <label className="text-sm font-medium mb-2 block">Budget (INR)</label>
                 <Input
                   type="number"
                   value={projectForm.budget}
@@ -703,7 +703,7 @@ export const DashboardPage = () => {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Amount (₹)</label>
+              <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
               <Input
                 type="number"
                 value={proposalForm.amount}
