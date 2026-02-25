@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Badge } from '../components/ui/badge';
-import { Users, Mail, Edit, Trash2, Shield, Eye, EyeOff, UserPlus, Settings } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Users, Mail, Edit, Trash2, Shield, Eye, EyeOff, UserPlus, Settings, Send, Clock, CheckCircle, XCircle, RefreshCw, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -27,13 +28,22 @@ const roleDescriptions = {
   team_member: 'Own tasks only'
 };
 
+const invitationStatusColors = {
+  pending: 'bg-yellow-500/20 text-yellow-600',
+  accepted: 'bg-green-500/20 text-green-600',
+  expired: 'bg-red-500/20 text-red-600',
+  cancelled: 'bg-slate-500/20 text-slate-600'
+};
+
 export const TeamPage = () => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [projects, setProjects] = useState([]);
   const [permissions, setPermissions] = useState(null);
+  const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditDialog, setIsEditDialog] = useState(false);
+  const [isInviteDialog, setIsInviteDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const { user } = useAuth();
 
@@ -41,6 +51,12 @@ export const TeamPage = () => {
     role: '',
     skills: '',
     assigned_projects: []
+  });
+
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    name: '',
+    role: 'team_member'
   });
 
   const fetchData = async () => {
