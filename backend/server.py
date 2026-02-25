@@ -707,6 +707,7 @@ async def get_tasks(project_id: Optional[str] = None, session_token: Optional[st
 async def update_task(task_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.tasks.update_one({"task_id": task_id}, {"$set": updates})
     
     # Update project completion if status changed
@@ -714,18 +715,61 @@ async def update_task(task_id: str, updates: dict, session_token: Optional[str] 
         task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
         if task:
             await update_project_completion(task["project_id"])
+            # Also update parent task if this is a subtask
+            if task.get("parent_task_id"):
+                await update_parent_task_completion(task["parent_task_id"])
     
     return {"message": "Task updated"}
+
+@api_router.get("/tasks/{task_id}")
+async def get_task_detail(task_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Get subtasks if any
+    if task.get("subtasks"):
+        subtask_docs = await db.tasks.find({"task_id": {"$in": task["subtasks"]}}, {"_id": 0}).to_list(100)
+        task["subtask_details"] = subtask_docs
+    
+    if isinstance(task['created_at'], str):
+        task['created_at'] = datetime.fromisoformat(task['created_at'])
+    
+    return task
+
+async def update_parent_task_completion(parent_task_id: str):
+    """Update parent task completion based on subtasks"""
+    parent = await db.tasks.find_one({"task_id": parent_task_id}, {"_id": 0})
+    if not parent or not parent.get("subtasks"):
+        return
+    
+    subtasks = await db.tasks.find({"task_id": {"$in": parent["subtasks"]}}, {"_id": 0}).to_list(100)
+    if not subtasks:
+        return
+    
+    completed = len([t for t in subtasks if t.get("status") == "completed"])
+    total = len(subtasks)
+    completion_pct = (completed / total * 100) if total > 0 else 0
+    
+    await db.tasks.update_one(
+        {"task_id": parent_task_id},
+        {"$set": {"completion_percentage": round(completion_pct, 2)}}
+    )
 
 @api_router.post("/tasks/{task_id}/add-comment")
 async def add_task_comment(task_id: str, comment: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
+    comment_id = f"cmt_{uuid.uuid4().hex[:12]}"
     comment_obj = {
+        "comment_id": comment_id,
         "user_id": user.user_id,
         "user_name": user.name,
         "comment": comment,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "edited": False
     }
     
     await db.tasks.update_one(
@@ -733,7 +777,82 @@ async def add_task_comment(task_id: str, comment: str, session_token: Optional[s
         {"$push": {"comments": comment_obj}}
     )
     
-    return {"message": "Comment added"}
+    return {"message": "Comment added", "comment_id": comment_id}
+
+@api_router.patch("/tasks/{task_id}/comments/{comment_id}")
+async def edit_task_comment(task_id: str, comment_id: str, new_comment: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    comments = task.get("comments", [])
+    updated = False
+    for c in comments:
+        if c.get("comment_id") == comment_id:
+            if c.get("user_id") != user.user_id:
+                raise HTTPException(status_code=403, detail="Can only edit your own comments")
+            c["comment"] = new_comment
+            c["edited"] = True
+            c["edited_at"] = datetime.now(timezone.utc).isoformat()
+            updated = True
+            break
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    
+    await db.tasks.update_one({"task_id": task_id}, {"$set": {"comments": comments}})
+    return {"message": "Comment updated"}
+
+@api_router.delete("/tasks/{task_id}/comments/{comment_id}")
+async def delete_task_comment(task_id: str, comment_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    comments = task.get("comments", [])
+    original_len = len(comments)
+    comments = [c for c in comments if not (c.get("comment_id") == comment_id and c.get("user_id") == user.user_id)]
+    
+    if len(comments) == original_len:
+        raise HTTPException(status_code=404, detail="Comment not found or not authorized")
+    
+    await db.tasks.update_one({"task_id": task_id}, {"$set": {"comments": comments}})
+    return {"message": "Comment deleted"}
+
+@api_router.post("/tasks/{task_id}/return-to-owner")
+async def return_task_to_owner(task_id: str, notes: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    update_data = {
+        "status": "in_progress",
+        "review_notes": notes,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.tasks.update_one({"task_id": task_id}, {"$set": update_data})
+    
+    # Add comment about return
+    if notes:
+        comment_obj = {
+            "comment_id": f"cmt_{uuid.uuid4().hex[:12]}",
+            "user_id": user.user_id,
+            "user_name": user.name,
+            "comment": f"[Returned for revision] {notes}",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "edited": False,
+            "is_system": True
+        }
+        await db.tasks.update_one({"task_id": task_id}, {"$push": {"comments": comment_obj}})
+    
+    return {"message": "Task returned to owner"}
 
 @api_router.post("/tasks/{task_id}/send-for-review")
 async def send_for_review(task_id: str, reviewer_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
