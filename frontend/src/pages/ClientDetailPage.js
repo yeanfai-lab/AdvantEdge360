@@ -5,7 +5,7 @@ import { API_URL } from '../lib/utils';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { ArrowLeft, Mail, Phone, Building2, DollarSign, FileText, FolderKanban, CheckSquare, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Building2, FileText, FolderKanban, CheckSquare, RefreshCw, IndianRupee } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -129,11 +129,11 @@ export const ClientDetailPage = () => {
         {finance && user?.role && ['admin', 'manager', 'finance'].includes(user.role) && (
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="h-5 w-5 text-chart-4" />
+              <IndianRupee className="h-5 w-5 text-chart-4" />
               <p className="text-sm text-muted-foreground">Revenue</p>
             </div>
-            <p className="text-3xl font-heading font-bold">${finance.total_revenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">${finance.pending_revenue.toLocaleString()} pending</p>
+            <p className="text-3xl font-heading font-bold">INR {finance.total_revenue.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">INR {finance.pending_revenue.toLocaleString()} pending</p>
           </Card>
         )}
       </div>
@@ -176,7 +176,7 @@ export const ClientDetailPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium mb-1">{proposal.title}</h4>
-                    {proposal.amount && <p className="text-sm text-muted-foreground">${proposal.amount.toLocaleString()}</p>}
+                    {proposal.amount && <p className="text-sm text-muted-foreground">INR {proposal.amount.toLocaleString()}</p>}
                   </div>
                   <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
                     proposal.status === 'approved' ? 'bg-chart-4/20 text-chart-4' : 'bg-muted text-foreground'
@@ -222,7 +222,7 @@ export const ClientDetailPage = () => {
                       {invoice.due_date && <p className="text-sm text-muted-foreground">Due: {new Date(invoice.due_date).toLocaleDateString()}</p>}
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-heading font-bold">${invoice.amount.toLocaleString()}</p>
+                      <p className="text-xl font-heading font-bold">INR {invoice.amount.toLocaleString()}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         invoice.status === 'paid' ? 'bg-chart-4/20 text-chart-4' : 'bg-chart-2/20 text-chart-2'
                       }`}>
