@@ -1362,7 +1362,9 @@ async def get_active_timer(session_token: Optional[str] = Cookie(None), authoriz
         "client_name": timer.get("client_name"),
         "start_time": timer["start_time"],
         "elapsed_minutes": elapsed_minutes,
-        "description": timer.get("description")
+        "description": timer.get("description"),
+        "is_paused": timer.get("is_paused", False),
+        "paused_time": timer.get("paused_time", 0)
     }
 
 @api_router.delete("/timer/cancel")
