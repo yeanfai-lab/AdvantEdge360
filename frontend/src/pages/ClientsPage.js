@@ -9,7 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Plus, Users, Mail, Phone, Building2, Inbox, Edit, Trash2, UserPlus } from 'lucide-react';
+import { Plus, Users, Mail, Phone, Building2, Inbox, Edit, Trash2, UserPlus, MapPin, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ClientsPage = () => {
@@ -20,8 +20,10 @@ export const ClientsPage = () => {
   const [loading, setLoading] = useState(true);
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
+  const [isEditCompanyDialogOpen, setIsEditCompanyDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [editingCompany, setEditingCompany] = useState(null);
   const [view, setView] = useState('clients');
   
   const [clientForm, setClientForm] = useState({
@@ -31,6 +33,9 @@ export const ClientsPage = () => {
     position: '',
     company_id: '',
     address: '',
+    business_address: '',
+    gst_number: '',
+    pan_number: '',
     notes: '',
     custom_fields: {}
   });
@@ -40,7 +45,10 @@ export const ClientsPage = () => {
     industry: '',
     website: '',
     address: '',
+    business_address: '',
     phone: '',
+    gst_number: '',
+    pan_number: '',
     custom_fields: {}
   });
   
@@ -71,13 +79,28 @@ export const ClientsPage = () => {
     fetchData();
   }, []);
 
+  const resetClientForm = () => {
+    setClientForm({
+      name: '', email: '', phone: '', position: '', company_id: '',
+      address: '', business_address: '', gst_number: '', pan_number: '',
+      notes: '', custom_fields: {}
+    });
+  };
+
+  const resetCompanyForm = () => {
+    setCompanyForm({
+      name: '', industry: '', website: '', address: '', business_address: '',
+      phone: '', gst_number: '', pan_number: '', custom_fields: {}
+    });
+  };
+
   const handleCreateClient = async (e) => {
     e.preventDefault();
     try {
       await axios.post(`${API_URL}/clients`, clientForm, { withCredentials: true });
       toast.success('Contact created successfully');
       setIsClientDialogOpen(false);
-      setClientForm({ name: '', email: '', phone: '', position: '', company_id: '', address: '', notes: '', custom_fields: {} });
+      resetClientForm();
       fetchData();
     } catch (error) {
       toast.error('Failed to create contact');
@@ -90,7 +113,7 @@ export const ClientsPage = () => {
       await axios.post(`${API_URL}/companies`, companyForm, { withCredentials: true });
       toast.success('Company created successfully');
       setIsCompanyDialogOpen(false);
-      setCompanyForm({ name: '', industry: '', website: '', address: '', phone: '', custom_fields: {} });
+      resetCompanyForm();
       fetchData();
     } catch (error) {
       toast.error('Failed to create company');
@@ -98,15 +121,20 @@ export const ClientsPage = () => {
   };
 
   const handleEditClient = (client) => {
-    setEditingClient(client);
-    setIsEditDialogOpen(true);
+    setEditingClient({ ...client });
+    setIsEditClientDialogOpen(true);
+  };
+
+  const handleEditCompany = (company) => {
+    setEditingCompany({ ...company });
+    setIsEditCompanyDialogOpen(true);
   };
 
   const handleUpdateClient = async () => {
     try {
       await axios.patch(`${API_URL}/clients/${editingClient.client_id}`, editingClient, { withCredentials: true });
       toast.success('Contact updated successfully');
-      setIsEditDialogOpen(false);
+      setIsEditClientDialogOpen(false);
       setEditingClient(null);
       fetchData();
     } catch (error) {
@@ -114,9 +142,20 @@ export const ClientsPage = () => {
     }
   };
 
+  const handleUpdateCompany = async () => {
+    try {
+      await axios.patch(`${API_URL}/companies/${editingCompany.company_id}`, editingCompany, { withCredentials: true });
+      toast.success('Company updated successfully');
+      setIsEditCompanyDialogOpen(false);
+      setEditingCompany(null);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update company');
+    }
+  };
+
   const handleDeleteClient = async (clientId) => {
     if (!window.confirm('Are you sure you want to delete this contact?')) return;
-    
     try {
       await axios.delete(`${API_URL}/clients/${clientId}`, { withCredentials: true });
       toast.success('Contact deleted successfully');
@@ -128,7 +167,6 @@ export const ClientsPage = () => {
 
   const handleDeleteCompany = async (companyId) => {
     if (!window.confirm('Are you sure you want to delete this company? This will fail if there are contacts associated.')) return;
-    
     try {
       await axios.delete(`${API_URL}/companies/${companyId}`, { withCredentials: true });
       toast.success('Company deleted successfully');
@@ -149,7 +187,6 @@ export const ClientsPage = () => {
 
   const addCustomField = (isCompany = false) => {
     if (!customField.key || !customField.value) return;
-    
     if (isCompany) {
       setCompanyForm({
         ...companyForm,
@@ -189,6 +226,7 @@ export const ClientsPage = () => {
           <TabsTrigger value="companies">Companies</TabsTrigger>
         </TabsList>
 
+        {/* CONTACTS TAB */}
         <TabsContent value="clients" className="space-y-6">
           <div className="flex justify-end">
             <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
@@ -204,26 +242,17 @@ export const ClientsPage = () => {
                 </DialogHeader>
                 <form onSubmit={handleCreateClient} className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Contact Name</label>
-                    <Input
-                      value={clientForm.name}
-                      onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })}
-                      placeholder="Enter contact name"
-                      required
-                    />
+                    <label className="text-sm font-medium mb-2 block">Contact Name *</label>
+                    <Input value={clientForm.name} onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })} placeholder="Enter contact name" required />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Company</label>
-                    <Select value={clientForm.company_id} onValueChange={(value) => setClientForm({ ...clientForm, company_id: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select company (optional)" />
-                      </SelectTrigger>
+                    <Select value={clientForm.company_id || '__none__'} onValueChange={(value) => setClientForm({ ...clientForm, company_id: value === '__none__' ? '' : value })}>
+                      <SelectTrigger><SelectValue placeholder="Select company (optional)" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {companies.map((company) => (
-                          <SelectItem key={company.company_id} value={company.company_id}>
-                            {company.name}
-                          </SelectItem>
+                          <SelectItem key={company.company_id} value={company.company_id}>{company.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -231,76 +260,52 @@ export const ClientsPage = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Email</label>
-                      <Input
-                        type="email"
-                        value={clientForm.email}
-                        onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
-                        placeholder="contact@example.com"
-                      />
+                      <Input type="email" value={clientForm.email} onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })} placeholder="contact@example.com" />
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Phone</label>
-                      <Input
-                        value={clientForm.phone}
-                        onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })}
-                        placeholder="+1 (555) 000-0000"
-                      />
+                      <Input value={clientForm.phone} onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })} placeholder="+91 98765 43210" />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Position</label>
-                    <Input
-                      value={clientForm.position}
-                      onChange={(e) => setClientForm({ ...clientForm, position: e.target.value })}
-                      placeholder="e.g., CEO, Manager"
-                    />
+                    <Input value={clientForm.position} onChange={(e) => setClientForm({ ...clientForm, position: e.target.value })} placeholder="e.g., CEO, Manager" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Address</label>
-                    <Input
-                      value={clientForm.address}
-                      onChange={(e) => setClientForm({ ...clientForm, address: e.target.value })}
-                      placeholder="Business address"
-                    />
+                    <label className="text-sm font-medium mb-2 block">Business Address</label>
+                    <Textarea value={clientForm.business_address} onChange={(e) => setClientForm({ ...clientForm, business_address: e.target.value })} placeholder="Full business address" rows={2} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">GST Number</label>
+                      <Input value={clientForm.gst_number} onChange={(e) => setClientForm({ ...clientForm, gst_number: e.target.value })} placeholder="22AAAAA0000A1Z5" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">PAN Number</label>
+                      <Input value={clientForm.pan_number} onChange={(e) => setClientForm({ ...clientForm, pan_number: e.target.value })} placeholder="AAAAA0000A" />
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Notes</label>
-                    <Textarea
-                      value={clientForm.notes}
-                      onChange={(e) => setClientForm({ ...clientForm, notes: e.target.value })}
-                      placeholder="Additional notes"
-                      rows={3}
-                    />
+                    <Textarea value={clientForm.notes} onChange={(e) => setClientForm({ ...clientForm, notes: e.target.value })} placeholder="Additional notes" rows={2} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Custom Fields</label>
                     <div className="flex gap-2 mb-2">
-                      <Input
-                        placeholder="Field name"
-                        value={customField.key}
-                        onChange={(e) => setCustomField({ ...customField, key: e.target.value })}
-                      />
-                      <Input
-                        placeholder="Value"
-                        value={customField.value}
-                        onChange={(e) => setCustomField({ ...customField, value: e.target.value })}
-                      />
+                      <Input placeholder="Field name" value={customField.key} onChange={(e) => setCustomField({ ...customField, key: e.target.value })} />
+                      <Input placeholder="Value" value={customField.value} onChange={(e) => setCustomField({ ...customField, value: e.target.value })} />
                       <Button type="button" onClick={() => addCustomField(false)}>Add</Button>
                     </div>
                     {Object.keys(clientForm.custom_fields).length > 0 && (
                       <div className="space-y-1">
                         {Object.entries(clientForm.custom_fields).map(([key, value]) => (
-                          <div key={key} className="text-sm bg-muted p-2 rounded">
-                            <strong>{key}:</strong> {value}
-                          </div>
+                          <div key={key} className="text-sm bg-muted p-2 rounded"><strong>{key}:</strong> {value}</div>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsClientDialogOpen(false)}>
-                      Cancel
-                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setIsClientDialogOpen(false)}>Cancel</Button>
                     <Button type="submit">Create Contact</Button>
                   </div>
                 </form>
@@ -317,30 +322,12 @@ export const ClientsPage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {clients.map((client) => (
-                <Card 
-                  key={client.client_id} 
-                  className="p-6 hover:shadow-md transition-shadow cursor-pointer relative" 
-                  data-testid={`client-card-${client.client_id}`}
-                >
+                <Card key={client.client_id} className="p-6 hover:shadow-md transition-shadow cursor-pointer relative" data-testid={`client-card-${client.client_id}`}>
                   <div className="absolute top-4 right-4 flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditClient(client);
-                      }}
-                    >
+                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleEditClient(client); }}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClient(client.client_id);
-                      }}
-                    >
+                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.client_id); }}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -348,13 +335,10 @@ export const ClientsPage = () => {
                     <div className="flex items-start justify-between mb-4 pr-20">
                       <div className="flex-1">
                         <h3 className="text-xl font-heading font-semibold mb-2">{client.name}</h3>
-                        {client.position && (
-                          <p className="text-sm text-muted-foreground mb-2">{client.position}</p>
-                        )}
+                        {client.position && <p className="text-sm text-muted-foreground mb-2">{client.position}</p>}
                         {client.company_name && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <Building2 className="h-4 w-4" />
-                            {client.company_name}
+                            <Building2 className="h-4 w-4" />{client.company_name}
                           </div>
                         )}
                       </div>
@@ -362,27 +346,20 @@ export const ClientsPage = () => {
                     <div className="space-y-2">
                       {client.email && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="h-4 w-4" />
-                          <span className="truncate">{client.email}</span>
+                          <Mail className="h-4 w-4" /><span className="truncate">{client.email}</span>
                         </div>
                       )}
                       {client.phone && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-4 w-4" />
-                          {client.phone}
+                          <Phone className="h-4 w-4" />{client.phone}
+                        </div>
+                      )}
+                      {client.gst_number && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <FileText className="h-4 w-4" />GST: {client.gst_number}
                         </div>
                       )}
                     </div>
-                    {Object.keys(client.custom_fields || {}).length > 0 && (
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-xs text-muted-foreground mb-2">Custom Fields</p>
-                        {Object.entries(client.custom_fields).slice(0, 2).map(([key, value]) => (
-                          <div key={key} className="text-xs">
-                            <strong>{key}:</strong> {value}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </Card>
               ))}
@@ -390,92 +367,65 @@ export const ClientsPage = () => {
           )}
         </TabsContent>
 
+        {/* COMPANIES TAB */}
         <TabsContent value="companies" className="space-y-6">
           <div className="flex justify-end">
             <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Company
-                </Button>
+                <Button><Plus className="mr-2 h-4 w-4" />New Company</Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Company</DialogTitle>
-                </DialogHeader>
+                <DialogHeader><DialogTitle>Add New Company</DialogTitle></DialogHeader>
                 <form onSubmit={handleCreateCompany} className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Company Name</label>
-                    <Input
-                      value={companyForm.name}
-                      onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })}
-                      placeholder="Enter company name"
-                      required
-                    />
+                    <label className="text-sm font-medium mb-2 block">Company Name *</label>
+                    <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="Enter company name" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Industry</label>
-                      <Input
-                        value={companyForm.industry}
-                        onChange={(e) => setCompanyForm({ ...companyForm, industry: e.target.value })}
-                        placeholder="e.g., Technology, Finance"
-                      />
+                      <Input value={companyForm.industry} onChange={(e) => setCompanyForm({ ...companyForm, industry: e.target.value })} placeholder="e.g., Technology, Finance" />
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Website</label>
-                      <Input
-                        value={companyForm.website}
-                        onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })}
-                        placeholder="https://example.com"
-                      />
+                      <Input value={companyForm.website} onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })} placeholder="https://example.com" />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Phone</label>
-                    <Input
-                      value={companyForm.phone}
-                      onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })}
-                      placeholder="+1 (555) 000-0000"
-                    />
+                    <Input value={companyForm.phone} onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} placeholder="+91 98765 43210" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Address</label>
-                    <Input
-                      value={companyForm.address}
-                      onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })}
-                      placeholder="Business address"
-                    />
+                    <label className="text-sm font-medium mb-2 block">Business Address</label>
+                    <Textarea value={companyForm.business_address} onChange={(e) => setCompanyForm({ ...companyForm, business_address: e.target.value })} placeholder="Full business/registered address" rows={2} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">GST Number</label>
+                      <Input value={companyForm.gst_number} onChange={(e) => setCompanyForm({ ...companyForm, gst_number: e.target.value })} placeholder="22AAAAA0000A1Z5" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">PAN Number</label>
+                      <Input value={companyForm.pan_number} onChange={(e) => setCompanyForm({ ...companyForm, pan_number: e.target.value })} placeholder="AAAAA0000A" />
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Custom Fields</label>
                     <div className="flex gap-2 mb-2">
-                      <Input
-                        placeholder="Field name"
-                        value={customField.key}
-                        onChange={(e) => setCustomField({ ...customField, key: e.target.value })}
-                      />
-                      <Input
-                        placeholder="Value"
-                        value={customField.value}
-                        onChange={(e) => setCustomField({ ...customField, value: e.target.value })}
-                      />
+                      <Input placeholder="Field name" value={customField.key} onChange={(e) => setCustomField({ ...customField, key: e.target.value })} />
+                      <Input placeholder="Value" value={customField.value} onChange={(e) => setCustomField({ ...customField, value: e.target.value })} />
                       <Button type="button" onClick={() => addCustomField(true)}>Add</Button>
                     </div>
                     {Object.keys(companyForm.custom_fields).length > 0 && (
                       <div className="space-y-1">
                         {Object.entries(companyForm.custom_fields).map(([key, value]) => (
-                          <div key={key} className="text-sm bg-muted p-2 rounded">
-                            <strong>{key}:</strong> {value}
-                          </div>
+                          <div key={key} className="text-sm bg-muted p-2 rounded"><strong>{key}:</strong> {value}</div>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>
-                      Cancel
-                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>Cancel</Button>
                     <Button type="submit">Create Company</Button>
                   </div>
                 </form>
@@ -495,24 +445,37 @@ export const ClientsPage = () => {
                 const companyClients = clients.filter(c => c.company_id === company.company_id);
                 return (
                   <Card key={company.company_id} className="p-6 hover:shadow-md transition-shadow relative">
-                    <div className="absolute top-4 right-4">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDeleteCompany(company.company_id)}
-                      >
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <Button size="icon" variant="ghost" onClick={() => handleEditCompany(company)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleDeleteCompany(company.company_id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                     <div>
-                      <h3 className="text-xl font-heading font-semibold mb-2 pr-10">{company.name}</h3>
-                      {company.industry && (
-                        <p className="text-sm text-muted-foreground mb-2">{company.industry}</p>
-                      )}
+                      <h3 className="text-xl font-heading font-semibold mb-2 pr-20">{company.name}</h3>
+                      {company.industry && <p className="text-sm text-muted-foreground mb-2">{company.industry}</p>}
                       {company.website && (
-                        <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline">
+                        <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline block mb-2">
                           {company.website}
                         </a>
+                      )}
+                      {company.business_address && (
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground mb-2">
+                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <span>{company.business_address}</span>
+                        </div>
+                      )}
+                      {company.gst_number && (
+                        <div className="text-sm text-muted-foreground mb-1">
+                          <strong>GST:</strong> {company.gst_number}
+                        </div>
+                      )}
+                      {company.pan_number && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          <strong>PAN:</strong> {company.pan_number}
+                        </div>
                       )}
                       <div className="mt-4 pt-4 border-t">
                         <p className="text-sm text-muted-foreground">
@@ -530,57 +493,96 @@ export const ClientsPage = () => {
 
       {/* Edit Client Dialog */}
       {editingClient && (
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <Dialog open={isEditClientDialogOpen} onOpenChange={setIsEditClientDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Contact</DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>Edit Contact</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Contact Name</label>
-                <Input
-                  value={editingClient.name}
-                  onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })}
-                />
+                <Input value={editingClient.name} onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Email</label>
-                  <Input
-                    value={editingClient.email || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
-                  />
+                  <Input value={editingClient.email || ''} onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })} />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Phone</label>
-                  <Input
-                    value={editingClient.phone || ''}
-                    onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })}
-                  />
+                  <Input value={editingClient.phone || ''} onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })} />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Position</label>
-                <Input
-                  value={editingClient.position || ''}
-                  onChange={(e) => setEditingClient({ ...editingClient, position: e.target.value })}
-                />
+                <Input value={editingClient.position || ''} onChange={(e) => setEditingClient({ ...editingClient, position: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Business Address</label>
+                <Textarea value={editingClient.business_address || ''} onChange={(e) => setEditingClient({ ...editingClient, business_address: e.target.value })} rows={2} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">GST Number</label>
+                  <Input value={editingClient.gst_number || ''} onChange={(e) => setEditingClient({ ...editingClient, gst_number: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">PAN Number</label>
+                  <Input value={editingClient.pan_number || ''} onChange={(e) => setEditingClient({ ...editingClient, pan_number: e.target.value })} />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Notes</label>
-                <Textarea
-                  value={editingClient.notes || ''}
-                  onChange={(e) => setEditingClient({ ...editingClient, notes: e.target.value })}
-                  rows={3}
-                />
+                <Textarea value={editingClient.notes || ''} onChange={(e) => setEditingClient({ ...editingClient, notes: e.target.value })} rows={2} />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateClient}>
-                  Save Changes
-                </Button>
+                <Button variant="outline" onClick={() => setIsEditClientDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateClient}>Save Changes</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Edit Company Dialog */}
+      {editingCompany && (
+        <Dialog open={isEditCompanyDialogOpen} onOpenChange={setIsEditCompanyDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Edit Company</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Company Name</label>
+                <Input value={editingCompany.name} onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Industry</label>
+                  <Input value={editingCompany.industry || ''} onChange={(e) => setEditingCompany({ ...editingCompany, industry: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Website</label>
+                  <Input value={editingCompany.website || ''} onChange={(e) => setEditingCompany({ ...editingCompany, website: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Phone</label>
+                <Input value={editingCompany.phone || ''} onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Business Address</label>
+                <Textarea value={editingCompany.business_address || ''} onChange={(e) => setEditingCompany({ ...editingCompany, business_address: e.target.value })} rows={2} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">GST Number</label>
+                  <Input value={editingCompany.gst_number || ''} onChange={(e) => setEditingCompany({ ...editingCompany, gst_number: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">PAN Number</label>
+                  <Input value={editingCompany.pan_number || ''} onChange={(e) => setEditingCompany({ ...editingCompany, pan_number: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditCompanyDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateCompany}>Save Changes</Button>
               </div>
             </div>
           </DialogContent>
