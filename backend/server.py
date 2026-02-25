@@ -1820,8 +1820,8 @@ class Company(BaseModel):
     pan_number: Optional[str] = None
     custom_fields: dict = {}
     status: str = "active"
-    created_by: str
-    created_at: datetime
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
 
 class CompanyCreate(BaseModel):
     name: str
@@ -1850,8 +1850,8 @@ class Client(BaseModel):
     status: str = "active"
     custom_fields: dict = {}
     notes: Optional[str] = None
-    created_by: str
-    created_at: datetime
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
 
 class ClientCreate(BaseModel):
     name: str
