@@ -160,7 +160,8 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 
