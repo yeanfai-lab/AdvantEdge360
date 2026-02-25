@@ -587,6 +587,67 @@ async def get_proposal_detail(proposal_id: str, session_token: Optional[str] = C
         proposal['created_at'] = datetime.fromisoformat(proposal['created_at'])
     return Proposal(**proposal)
 
+@api_router.delete("/proposals/{proposal_id}")
+async def delete_proposal(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    await db.proposals.delete_one({"proposal_id": proposal_id})
+    return {"message": "Proposal deleted"}
+
+@api_router.post("/proposals/{proposal_id}/send-to-client")
+async def send_proposal_to_client(proposal_id: str, client_email: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "sent_to_client",
+            "client_email": client_email,
+            "sent_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Send email to client (demo mode)
+    await send_email_via_gmail(
+        user.user_id,
+        client_email,
+        f"Proposal: {proposal['title']}",
+        f"Dear {proposal['client_name']},\n\n"
+        f"Please find attached our proposal: {proposal['title']}\n\n"
+        f"Amount: ${proposal.get('amount', 0):,.2f}\n\n"
+        f"Please review and let us know if you have any questions.\n\n"
+        f"Best regards,\n{user.name}"
+    )
+    
+    return {"message": "Proposal sent to client"}
+
+@api_router.post("/proposals/{proposal_id}/confirm")
+async def confirm_proposal(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {"$set": {
+            "status": "confirmed",
+            "confirmed_at": datetime.now(timezone.utc).isoformat(),
+            "confirmed_by": user.user_id
+        }}
+    )
+    
+    return {"message": "Proposal confirmed"}
+
 @api_router.post("/proposals/{proposal_id}/send-for-internal-approval")
 async def send_for_internal_approval(proposal_id: str, approver_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
