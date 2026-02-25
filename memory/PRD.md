@@ -118,6 +118,12 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [x] Active timer banner display
 - [x] Inline editing for proposal fields
 
+### December 2025 - V4 Enhancements (Latest)
+- [x] PDF export for reports (projects, tasks, time logs, team productivity, overview)
+- [x] Custom React hooks (useProposals, useProjects, useTasks, useTimer)
+- [x] Backend modular structure started (models, services, utils)
+- [x] Export dropdown menus with CSV/PDF options
+
 ### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
 - [x] ProposalDetailPage with full CRUD and approval controls
