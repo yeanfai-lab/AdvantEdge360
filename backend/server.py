@@ -345,8 +345,28 @@ async def get_project(project_id: str, session_token: Optional[str] = Cookie(Non
 async def update_project(project_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.projects.update_one({"project_id": project_id}, {"$set": updates})
     return {"message": "Project updated"}
+
+@api_router.delete("/projects/{project_id}")
+async def delete_project(project_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    project = await db.projects.find_one({"project_id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Delete all tasks associated with this project
+    await db.tasks.delete_many({"project_id": project_id})
+    
+    # Delete all time logs associated with this project
+    await db.time_logs.delete_many({"project_id": project_id})
+    
+    # Delete the project
+    await db.projects.delete_one({"project_id": project_id})
+    
+    return {"message": "Project and associated tasks deleted"}
 
 # ========== PROPOSAL ROUTES ==========
 
