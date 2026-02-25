@@ -17,7 +17,9 @@ import {
   X,
   Calendar,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  Receipt
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -31,11 +33,11 @@ const navigation = [
   { name: 'Time Tracking', href: '/time-tracking', icon: Clock },
   { 
     name: 'Team', 
-    href: '/team', 
     icon: Users,
     children: [
-      { name: 'Team Members', href: '/team' },
-      { name: 'Leave & Expenses', href: '/leave-reimbursement', icon: Calendar }
+      { name: 'Team Members', href: '/team', icon: UserCheck },
+      { name: 'Leave Applications', href: '/leave-reimbursement', icon: Calendar },
+      { name: 'Reimbursements', href: '/reimbursements', icon: Receipt }
     ]
   },
   { name: 'Finance', href: '/finance', icon: DollarSign },
