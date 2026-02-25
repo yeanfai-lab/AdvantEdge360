@@ -128,6 +128,52 @@ export const TeamPage = () => {
     }
   };
 
+  const handleSendInvitation = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(`${API_URL}/team/invitations`, inviteForm, { withCredentials: true });
+      toast.success(`Invitation sent to ${inviteForm.email}`);
+      if (response.data.demo_mode) {
+        toast.info('Note: Email is in demo mode - not actually sent');
+      }
+      setIsInviteDialog(false);
+      setInviteForm({ email: '', name: '', role: 'team_member' });
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send invitation');
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId) => {
+    if (!window.confirm('Cancel this invitation?')) return;
+    try {
+      await axios.delete(`${API_URL}/team/invitations/${invitationId}`, { withCredentials: true });
+      toast.success('Invitation cancelled');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to cancel invitation');
+    }
+  };
+
+  const handleResendInvitation = async (invitationId) => {
+    try {
+      const response = await axios.post(`${API_URL}/team/invitations/${invitationId}/resend`, {}, { withCredentials: true });
+      toast.success('Invitation resent');
+      if (response.data.demo_mode) {
+        toast.info('Note: Email is in demo mode - not actually sent');
+      }
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to resend invitation');
+    }
+  };
+
+  const copyInvitationLink = (token) => {
+    const link = `${window.location.origin}?invite=${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Invitation link copied to clipboard');
+  };
+
   const formatRole = (role) => {
     return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
