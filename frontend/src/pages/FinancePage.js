@@ -31,11 +31,9 @@ const paymentStatuses = [
 ];
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
+  return `INR ${new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0
-  }).format(amount);
+  }).format(amount)}`;
 };
 
 export const FinancePage = () => {
