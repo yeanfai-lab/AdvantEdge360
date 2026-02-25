@@ -1940,6 +1940,82 @@ async def delete_company(company_id: str, session_token: Optional[str] = Cookie(
     await db.companies.delete_one({"company_id": company_id})
     return {"message": "Company deleted"}
 
+@api_router.get("/companies/{company_id}/overview")
+async def get_company_overview(company_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    """Get comprehensive company overview with contacts, projects, proposals, tasks, and financials"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    company = await db.companies.find_one({"company_id": company_id}, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    # Get all contacts for this company
+    contacts = await db.clients.find({"company_id": company_id}, {"_id": 0}).to_list(1000)
+    
+    # Get all projects where client_name matches company name or any contact name
+    contact_names = [c["name"] for c in contacts]
+    all_names = [company["name"]] + contact_names
+    projects = await db.projects.find({"client_name": {"$in": all_names}}, {"_id": 0}).to_list(1000)
+    
+    # Get all proposals for company or contacts
+    proposals = await db.proposals.find({"client_name": {"$in": all_names}}, {"_id": 0}).to_list(1000)
+    
+    # Get tasks for all projects
+    project_ids = [p["project_id"] for p in projects]
+    tasks = await db.tasks.find({"project_id": {"$in": project_ids}}, {"_id": 0}).to_list(1000) if project_ids else []
+    
+    # Get fee structure for all projects
+    fee_items = await db.fee_structure.find({"project_id": {"$in": project_ids}}, {"_id": 0}).to_list(1000) if project_ids else []
+    
+    # Calculate financials (if user has access)
+    total_revenue = 0
+    pending_revenue = 0
+    invoices = []
+    if user.role in ["admin", "manager", "finance"]:
+        # Total project value from fee structure
+        total_project_value = sum(f.get("amount", 0) for f in fee_items)
+        # Paid revenue from fee structure items with payment_status = 'paid'
+        total_revenue = sum(f.get("amount", 0) for f in fee_items if f.get("payment_status") == "paid")
+        pending_revenue = total_project_value - total_revenue
+        # Also check invoices collection
+        for contact in contacts:
+            contact_invoices = await db.invoices.find({"client_id": contact.get("client_id")}, {"_id": 0}).to_list(100)
+            invoices.extend(contact_invoices)
+        total_revenue += sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "paid")
+        pending_revenue += sum(inv.get("amount", 0) for inv in invoices if inv.get("status") == "pending")
+    
+    return {
+        "company": company,
+        "contacts": {
+            "total": len(contacts),
+            "list": contacts
+        },
+        "projects": {
+            "total": len(projects),
+            "active": len([p for p in projects if p.get("status") == "active"]),
+            "list": projects
+        },
+        "proposals": {
+            "total": len(proposals),
+            "approved": len([p for p in proposals if p.get("status") == "approved"]),
+            "converted": len([p for p in proposals if p.get("status") == "converted"]),
+            "list": proposals
+        },
+        "tasks": {
+            "total": len(tasks),
+            "completed": len([t for t in tasks if t.get("status") == "completed"]),
+            "in_progress": len([t for t in tasks if t.get("status") == "in_progress"]),
+            "list": tasks[:20]  # Latest 20 tasks
+        },
+        "finance": {
+            "total_revenue": total_revenue,
+            "pending_revenue": pending_revenue,
+            "total_project_value": sum(f.get("amount", 0) for f in fee_items),
+            "fee_items_count": len(fee_items),
+            "invoices": invoices[:20]
+        } if user.role in ["admin", "manager", "finance"] else None
+    }
+
 # ========== CLIENT ROUTES ==========
 
 @api_router.post("/clients", response_model=Client)
