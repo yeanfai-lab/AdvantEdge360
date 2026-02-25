@@ -219,7 +219,7 @@ class TestReimbursementWithFileUpload:
         data = response.json()
         assert data["category"] == "office_supplies"
         assert data["amount"] == 1500
-        assert data["is_internal"] == True
+        assert data["project_id"] is None  # Internal = no project
         TestReimbursementWithFileUpload.created_reimbursement_id = data["reimbursement_id"]
         print(f"Created internal reimbursement: {data['reimbursement_id']}")
     
@@ -243,7 +243,7 @@ class TestReimbursementWithFileUpload:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         data = response.json()
         assert data["project_id"] == TestReimbursementWithFileUpload.test_project_id
-        assert data["is_internal"] == False
+        assert data["project_id"] is not None  # Project-tagged = has project_id
         print(f"Created project reimbursement: {data['reimbursement_id']}")
     
     def test_upload_receipt_png(self):
