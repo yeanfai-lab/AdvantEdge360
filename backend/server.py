@@ -84,6 +84,7 @@ class Proposal(BaseModel):
     category: Optional[str] = None  # Individual-Residential, Housing, Commercial, Institutional, Hospitality
     description: str
     version: int = 1
+    version_history: List[dict] = []  # Stores previous versions
     status: str = "draft"  # draft, pending_approval, approved, sent_to_client, signed, rejected, converted
     amount: Optional[float] = None
     created_by: str
@@ -98,7 +99,9 @@ class Proposal(BaseModel):
     drive_file_name: Optional[str] = None
     drive_file_link: Optional[str] = None
     pdf_attachment: Optional[str] = None
+    attachments: List[dict] = []  # For file attachments
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
 class ProposalCreate(BaseModel):
     title: str
@@ -120,7 +123,8 @@ class Task(BaseModel):
     priority: str = "medium"
     assigned_to: Optional[str] = None
     reviewer_id: Optional[str] = None
-    comments: List[dict] = []
+    comments: List[dict] = []  # {comment_id, user_id, user_name, comment, timestamp, edited}
+    attachments: List[dict] = []  # {attachment_id, filename, url, uploaded_by, uploaded_at}
     review_notes: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
@@ -130,15 +134,10 @@ class Task(BaseModel):
     parent_task_id: Optional[str] = None
     subtasks: List[str] = []
     time_logs: List[dict] = []
+    total_tracked_time: int = 0  # Total time in minutes
     created_by: str
     created_at: datetime
-    assigned_to: Optional[str] = None
-    due_date: Optional[str] = None
-    parent_task_id: Optional[str] = None
-    subtasks: List[str] = []
-    time_logs: List[dict] = []
-    created_by: str
-    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 class TaskCreate(BaseModel):
     project_id: str
