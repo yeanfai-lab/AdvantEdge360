@@ -514,7 +514,7 @@ export const ProposalsPage = () => {
                 <p className="font-semibold">{selectedProposal.title}</p>
                 <p className="text-sm text-muted-foreground">{selectedProposal.client_name}</p>
                 {selectedProposal.amount && (
-                  <p className="text-lg font-mono mt-2">${selectedProposal.amount.toLocaleString()}</p>
+                  <p className="text-lg font-mono mt-2">INR {selectedProposal.amount.toLocaleString('en-IN')}</p>
                 )}
               </div>
             )}
@@ -579,7 +579,7 @@ export const ProposalsPage = () => {
                         {proposal.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="p-4 font-mono">{proposal.amount ? `$${proposal.amount.toLocaleString()}` : '-'}</td>
+                    <td className="p-4 font-mono">{proposal.amount ? `INR ${proposal.amount.toLocaleString('en-IN')}` : '-'}</td>
                     <td className="p-4 text-sm text-muted-foreground">v{proposal.version || 1}</td>
                     <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
@@ -697,7 +697,7 @@ export const ProposalsPage = () => {
               {proposal.amount && (
                 <div className="mb-4 pb-4 border-b">
                   <p className="text-sm text-muted-foreground">Proposed Amount</p>
-                  <p className="text-lg font-mono font-semibold">${proposal.amount.toLocaleString()}</p>
+                  <p className="text-lg font-mono font-semibold">INR {proposal.amount.toLocaleString('en-IN')}</p>
                 </div>
               )}
               

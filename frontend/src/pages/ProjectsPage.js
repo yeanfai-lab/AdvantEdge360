@@ -255,7 +255,7 @@ export const ProjectsPage = () => {
                         <span className="text-sm">{project.completion_percentage || 0}%</span>
                       </div>
                     </td>
-                    <td className="p-4 font-mono">{project.budget ? `$${project.budget.toLocaleString()}` : '-'}</td>
+                    <td className="p-4 font-mono">{project.budget ? `INR ${project.budget.toLocaleString('en-IN')}` : '-'}</td>
                     <td className="p-4 text-right">
                       <ChevronRight className="h-5 w-5 text-muted-foreground inline" />
                     </td>
@@ -301,7 +301,7 @@ export const ProjectsPage = () => {
                 <div className="pt-4 border-t flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Budget</p>
-                    <p className="text-lg font-mono font-semibold">${project.budget.toLocaleString()}</p>
+                    <p className="text-lg font-mono font-semibold">INR {project.budget.toLocaleString('en-IN')}</p>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
