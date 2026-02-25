@@ -634,50 +634,84 @@ export const ProposalsPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
                   {proposal.status === 'draft' && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleOpenDrivePicker(proposal)}
-                      >
-                        <HardDrive className="mr-1 h-3 w-3" />
-                        Attach
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleApprove(proposal.proposal_id)}
-                        data-testid={`approve-proposal-${proposal.proposal_id}`}
-                      >
-                        <Check className="mr-1 h-3 w-3" />
-                        Approve
-                      </Button>
-                    </>
-                  )}
-                  {proposal.status === 'approved' && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedProposal(proposal);
-                          setIsSendDialogOpen(true);
-                        }}
-                      >
-                        <Send className="mr-1 h-3 w-3" />
-                        Sign
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleConvert(proposal.proposal_id)}
-                        data-testid={`convert-proposal-${proposal.proposal_id}`}
-                      >
-                        Convert
-                      </Button>
-                    </>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenDrivePicker(proposal)}
+                    >
+                      <HardDrive className="mr-1 h-3 w-3" />
+                      Attach
+                    </Button>
                   )}
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" data-testid={`tile-actions-${proposal.proposal_id}`}>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => navigate(`/proposals/${proposal.proposal_id}`)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      
+                      {proposal.status === 'draft' && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedProposal(proposal);
+                            setIsApprovalDialogOpen(true);
+                          }}>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Send for Approval
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      
+                      {proposal.status === 'approved' && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedProposal(proposal);
+                            setIsSendDialogOpen(true);
+                          }}>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Send to Client
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleConvert(proposal.proposal_id)}>
+                            <FolderOpen className="mr-2 h-4 w-4" />
+                            Convert to Project
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      
+                      {proposal.status === 'sent_to_client' && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedProposal(proposal);
+                            setIsConfirmDialogOpen(true);
+                          }}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Confirm Proposal
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      
+                      {['confirmed', 'signed'].includes(proposal.status) && !proposal.project_id && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleConvert(proposal.proposal_id)}>
+                            <FolderOpen className="mr-2 h-4 w-4" />
+                            Convert to Project
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </Card>
           ))}
