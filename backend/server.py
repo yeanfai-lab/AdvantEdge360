@@ -1375,6 +1375,110 @@ async def cancel_timer(session_token: Optional[str] = Cookie(None), authorizatio
     
     return {"message": "Timer cancelled"}
 
+@api_router.post("/timer/pause")
+async def pause_timer(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    timer = await db.active_timers.find_one({"user_id": user.user_id}, {"_id": 0})
+    if not timer:
+        raise HTTPException(status_code=404, detail="No active timer found")
+    
+    if timer.get("is_paused"):
+        raise HTTPException(status_code=400, detail="Timer is already paused")
+    
+    # Calculate time elapsed until pause
+    start_time = datetime.fromisoformat(timer["start_time"])
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
+    elapsed = datetime.now(timezone.utc) - start_time
+    elapsed_seconds = int(elapsed.total_seconds()) + timer.get("paused_time", 0)
+    
+    await db.active_timers.update_one(
+        {"user_id": user.user_id},
+        {"$set": {
+            "is_paused": True,
+            "paused_at": datetime.now(timezone.utc).isoformat(),
+            "paused_time": elapsed_seconds
+        }}
+    )
+    
+    return {"message": "Timer paused", "elapsed_seconds": elapsed_seconds}
+
+@api_router.post("/timer/resume")
+async def resume_timer(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    timer = await db.active_timers.find_one({"user_id": user.user_id}, {"_id": 0})
+    if not timer:
+        raise HTTPException(status_code=404, detail="No active timer found")
+    
+    if not timer.get("is_paused"):
+        raise HTTPException(status_code=400, detail="Timer is not paused")
+    
+    # Reset start time to now, keep paused_time for total calculation
+    await db.active_timers.update_one(
+        {"user_id": user.user_id},
+        {"$set": {
+            "is_paused": False,
+            "start_time": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Timer resumed"}
+
+@api_router.patch("/time-logs/{log_id}")
+async def update_time_log(log_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    log = await db.time_logs.find_one({"log_id": log_id}, {"_id": 0})
+    if not log:
+        raise HTTPException(status_code=404, detail="Time log not found")
+    
+    # Only allow updating own logs or if admin/manager
+    if log["user_id"] != user.user_id and user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Calculate duration difference for task total_tracked_time
+    old_duration = log.get("duration_minutes", 0)
+    new_duration = updates.get("duration_minutes", old_duration)
+    duration_diff = new_duration - old_duration
+    
+    allowed_fields = ["duration_minutes", "description", "date", "billable"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    await db.time_logs.update_one({"log_id": log_id}, {"$set": filtered_updates})
+    
+    # Update task's total_tracked_time if duration changed
+    if duration_diff != 0:
+        await db.tasks.update_one(
+            {"task_id": log["task_id"]},
+            {"$inc": {"total_tracked_time": duration_diff}}
+        )
+    
+    return {"message": "Time log updated"}
+
+@api_router.delete("/time-logs/{log_id}")
+async def delete_time_log(log_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    log = await db.time_logs.find_one({"log_id": log_id}, {"_id": 0})
+    if not log:
+        raise HTTPException(status_code=404, detail="Time log not found")
+    
+    # Only allow deleting own logs or if admin/manager
+    if log["user_id"] != user.user_id and user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Update task's total_tracked_time
+    await db.tasks.update_one(
+        {"task_id": log["task_id"]},
+        {"$inc": {"total_tracked_time": -log.get("duration_minutes", 0)}}
+    )
+    
+    await db.time_logs.delete_one({"log_id": log_id})
+    
+    return {"message": "Time log deleted"}
+
 # ========== TEAM ROUTES ==========
 
 @api_router.get("/team", response_model=List[User])
