@@ -472,6 +472,9 @@ export const TasksPage = () => {
                             </button>
                           )}
                           <h4 className="font-medium">{task.title}</h4>
+                          {task.is_internal && (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/20 text-amber-600">Internal</span>
+                          )}
                           {getStatusBadge(task.status)}
                           {getPriorityBadge(task.priority)}
                           {subtasks.length > 0 && (
@@ -481,6 +484,9 @@ export const TasksPage = () => {
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           {project && (
                             <span className="px-2 py-0.5 bg-muted rounded">{project.name}</span>
+                          )}
+                          {!project && !task.is_internal && (
+                            <span className="px-2 py-0.5 bg-muted rounded text-muted-foreground">No Project</span>
                           )}
                           {task.assigned_to && (
                             <span>Assigned: {teamMembers.find(m => m.user_id === task.assigned_to)?.name || 'Unknown'}</span>
