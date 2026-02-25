@@ -365,9 +365,6 @@ export const ProjectDetailPage = () => {
     }
   };
 
-  const [isEditProjectDialog, setIsEditProjectDialog] = useState(false);
-  const [projectForm, setProjectForm] = useState({});
-
   const handleUpdateProject = async (e) => {
     e.preventDefault();
     try {
