@@ -4,8 +4,9 @@ import { API_URL } from '../lib/utils';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, TrendingUp, Users, Clock, Download } from 'lucide-react';
+import { FileText, TrendingUp, Users, Clock, Download, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ReportsPage = () => {
