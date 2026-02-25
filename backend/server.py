@@ -988,9 +988,10 @@ async def create_task(payload: TaskCreate, session_token: Optional[str] = Cookie
     task_doc = {
         "task_id": task_id,
         "project_id": payload.project_id,
+        "is_internal": payload.is_internal or (payload.project_id is None),  # Auto-set internal if no project
         "title": payload.title,
         "description": payload.description,
-        "status": "todo",
+        "status": "not_started",
         "priority": payload.priority,
         "assigned_to": payload.assigned_to,
         "due_date": payload.due_date,
@@ -1013,12 +1014,15 @@ async def create_task(payload: TaskCreate, session_token: Optional[str] = Cookie
     return Task(**task_doc)
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks(project_id: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+async def get_tasks(project_id: Optional[str] = None, include_internal: bool = False, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
     query = {}
     if project_id:
         query["project_id"] = project_id
+    elif include_internal:
+        # Include both project and internal tasks
+        pass
     
     tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
     for task in tasks:
