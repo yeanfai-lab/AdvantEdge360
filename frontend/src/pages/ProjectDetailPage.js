@@ -902,17 +902,24 @@ export const ProjectDetailPage = () => {
                   <>
                     <Button onClick={() => handleApproveReview(selectedTask.task_id)} className="bg-green-500 hover:bg-green-600">
                       <Check className="mr-2 h-4 w-4" />
-                      Approve
+                      Approve & Continue
                     </Button>
                     <Button 
                       variant="outline" 
+                      onClick={() => handleReturnToOwner(selectedTask.task_id)}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Return to Owner
+                    </Button>
+                    <Button 
+                      variant="ghost" 
                       onClick={() => {
                         const notes = window.prompt('Enter revision notes:');
                         if (notes) handleReturnForRevision(selectedTask.task_id, notes);
                       }}
                     >
                       <X className="mr-2 h-4 w-4" />
-                      Return for Revision
+                      Reject
                     </Button>
                   </>
                 )}
@@ -921,16 +928,58 @@ export const ProjectDetailPage = () => {
               {/* Comments */}
               <div>
                 <p className="text-sm font-medium mb-3">Comments ({selectedTask.comments?.length || 0})</p>
-                <div className="space-y-3 max-h-48 overflow-y-auto mb-3">
-                  {selectedTask.comments?.map((comment, index) => (
-                    <div key={index} className="p-3 bg-muted rounded-lg">
+                <div className="space-y-3 max-h-64 overflow-y-auto mb-3">
+                  {selectedTask.comments?.map((comment) => (
+                    <div key={comment.comment_id || comment.timestamp} className="p-3 bg-muted rounded-lg group">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium">{comment.user_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(comment.timestamp).toLocaleString()}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{comment.user_name}</p>
+                          {comment.edited && <span className="text-xs text-muted-foreground">(edited)</span>}
+                          {comment.is_system && <span className="text-xs text-yellow-600 bg-yellow-500/20 px-1 rounded">System</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(comment.timestamp).toLocaleString()}
+                          </p>
+                          {comment.user_id === user?.user_id && !comment.is_system && (
+                            <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                              <button
+                                className="p-1 hover:bg-background rounded"
+                                onClick={() => {
+                                  setEditingComment(comment.comment_id);
+                                  setEditCommentText(comment.comment);
+                                }}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </button>
+                              <button
+                                className="p-1 hover:bg-background rounded text-destructive"
+                                onClick={() => handleDeleteComment(comment.comment_id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm">{comment.comment}</p>
+                      {editingComment === comment.comment_id ? (
+                        <div className="flex gap-2 mt-2">
+                          <Input
+                            value={editCommentText}
+                            onChange={(e) => setEditCommentText(e.target.value)}
+                            className="flex-1"
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={() => handleEditComment(comment.comment_id)}>
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm">{comment.comment}</p>
+                      )}
                     </div>
                   ))}
                   {(!selectedTask.comments || selectedTask.comments.length === 0) && (
