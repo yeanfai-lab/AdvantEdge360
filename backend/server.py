@@ -2774,6 +2774,71 @@ class ExpenseCreate(BaseModel):
     description: Optional[str] = None
     date: str
 
+# ========== FEE STRUCTURE MODELS ==========
+
+class FeeStructureItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    item_id: str
+    project_id: str
+    stage: str
+    deliverable: str
+    percentage: float
+    amount: float
+    tentative_billing_date: Optional[str] = None
+    deliverable_status: str = "not_started"  # not_started, in_progress, on_hold, completed
+    invoice_status: str = "not_invoiced"  # not_invoiced, invoiced, paid
+    payment_status: str = "pending"  # pending, received
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class FeeStructureCreate(BaseModel):
+    project_id: str
+    stage: str
+    deliverable: str
+    percentage: float
+    amount: float
+    tentative_billing_date: Optional[str] = None
+    deliverable_status: str = "not_started"
+    invoice_status: str = "not_invoiced"
+    payment_status: str = "pending"
+
+# ========== TEAM SALARY MODELS ==========
+
+class TeamSalary(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    salary_id: str
+    user_id: str
+    user_name: str
+    monthly_salary: float
+    hourly_rate: float
+    daily_rate: float
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class TeamSalaryCreate(BaseModel):
+    user_id: str
+    monthly_salary: float
+    hourly_rate: float
+    daily_rate: float
+
+# ========== CASH FLOW EXPENSE MODELS ==========
+
+class CashFlowExpense(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    expense_id: str
+    expense_head: str
+    sub_head: Optional[str] = None
+    month_year: str  # Format: "2025-01", "2025-02", etc.
+    amount: float
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class CashFlowExpenseCreate(BaseModel):
+    expense_head: str
+    sub_head: Optional[str] = None
+    month_year: str
+    amount: float
+
 @api_router.post("/invoices", response_model=Invoice)
 async def create_invoice(payload: InvoiceCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
