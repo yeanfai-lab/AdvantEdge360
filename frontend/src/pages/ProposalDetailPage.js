@@ -474,23 +474,26 @@ export const ProposalDetailPage = () => {
               <Card className="p-6">
                 <h3 className="text-lg font-heading font-semibold mb-4">Actions</h3>
                 <div className="space-y-2">
-                  {canEdit && (
-                    <>
-                      <Button className="w-full" onClick={() => setIsEditing(true)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Proposal
-                      </Button>
-                      {proposal.status === 'draft' && (
-                        <Button className="w-full" variant="outline" onClick={() => setIsApproverDialog(true)}>
-                          <Send className="mr-2 h-4 w-4" />
-                          Send for Internal Approval
-                        </Button>
-                      )}
-                    </>
+                  {/* Edit button - always available for creators */}
+                  {isCreator && (
+                    <Button className="w-full" onClick={() => setIsEditing(true)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Proposal
+                    </Button>
                   )}
+                  
+                  {/* Draft status actions */}
+                  {proposal.status === 'draft' && isCreator && (
+                    <Button className="w-full" variant="outline" onClick={() => setIsApproverDialog(true)}>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send for Approval
+                    </Button>
+                  )}
+                  
+                  {/* Pending approval - approver actions */}
                   {canApprove && (
                     <>
-                      <Button className="w-full" onClick={handleApprove}>
+                      <Button className="w-full bg-green-500 hover:bg-green-600" onClick={handleApprove}>
                         <Check className="mr-2 h-4 w-4" />
                         Approve
                       </Button>
@@ -504,16 +507,42 @@ export const ProposalDetailPage = () => {
                       </Button>
                     </>
                   )}
+                  
+                  {/* Approved status - send to client */}
                   {proposal.status === 'approved' && isCreator && (
                     <Button className="w-full" onClick={() => setIsSendDialog(true)}>
                       <Send className="mr-2 h-4 w-4" />
                       Send to Client
                     </Button>
                   )}
-                  {proposal.status === 'signed' && (
-                    <Button className="w-full" onClick={handleConvert}>
+                  
+                  {/* Sent to client - confirm proposal */}
+                  {proposal.status === 'sent_to_client' && isCreator && (
+                    <>
+                      <Button className="w-full bg-green-500 hover:bg-green-600" onClick={handleConfirm}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Confirm Proposal
+                      </Button>
+                      <Button className="w-full" variant="outline" onClick={() => setIsManualApprovalDialog(true)}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Manual Approval
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Confirmed/Signed status - convert to project */}
+                  {['confirmed', 'signed'].includes(proposal.status) && isCreator && !proposal.project_id && (
+                    <Button className="w-full bg-primary" onClick={handleConvert}>
                       <FileText className="mr-2 h-4 w-4" />
                       Convert to Project
+                    </Button>
+                  )}
+                  
+                  {/* Delete button */}
+                  {isCreator && !proposal.project_id && (
+                    <Button className="w-full" variant="destructive" onClick={handleDelete}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Proposal
                     </Button>
                   )}
                 </div>
