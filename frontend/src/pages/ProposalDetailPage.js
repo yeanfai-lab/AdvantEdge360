@@ -447,7 +447,7 @@ export const ProposalDetailPage = () => {
                     <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{version.description}</p>
                   )}
                   {version.amount && (
-                    <p className="text-sm text-muted-foreground mt-1">Amount: ${version.amount.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Amount: INR {version.amount.toLocaleString('en-IN')}</p>
                   )}
                   {version.note && (
                     <p className="text-xs text-yellow-600 mt-1">{version.note}</p>
@@ -564,7 +564,7 @@ export const ProposalDetailPage = () => {
                       className={`text-2xl font-heading font-bold ${canEdit ? 'cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1' : ''}`}
                       onClick={() => canEdit && startInlineEdit('amount', proposal.amount || '')}
                     >
-                      {proposal.amount ? `$${proposal.amount.toLocaleString()}` : <span className="text-muted-foreground text-base">Click to add</span>}
+                      {proposal.amount ? `INR ${proposal.amount.toLocaleString('en-IN')}` : <span className="text-muted-foreground text-base">Click to add</span>}
                       {canEdit && <Edit className="h-3 w-3 text-muted-foreground inline ml-2 opacity-50" />}
                     </p>
                   )}
