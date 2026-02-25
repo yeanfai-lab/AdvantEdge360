@@ -167,7 +167,7 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <AppLayout>
-              <LeaveReimbursementPage defaultTab="leaves" />
+              <LeaveApplicationsPage />
             </AppLayout>
           </ProtectedRoute>
         }
@@ -177,7 +177,7 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <AppLayout>
-              <LeaveReimbursementPage defaultTab="reimbursements" />
+              <ReimbursementsPage />
             </AppLayout>
           </ProtectedRoute>
         }
