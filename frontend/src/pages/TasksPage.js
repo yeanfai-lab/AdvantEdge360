@@ -115,10 +115,58 @@ export const TasksPage = () => {
   const handleCreateTask = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/tasks`, taskForm, { withCredentials: true });
-      toast.success('Task created');
+      // Create main task
+      const taskRes = await axios.post(`${API_URL}/tasks`, {
+        project_id: taskForm.project_id,
+        title: taskForm.title,
+        description: taskForm.description,
+        priority: taskForm.priority,
+        assigned_to: taskForm.assigned_to || null,
+        start_date: taskForm.start_date || null,
+        end_date: taskForm.end_date || null,
+        reviewer_id: taskForm.reviewer_id || null,
+        parent_task_id: taskForm.parent_task_id || null
+      }, { withCredentials: true });
+      
+      // Create subtasks if any
+      if (taskForm.subtasks_to_create.length > 0) {
+        const subtaskIds = [];
+        for (const subtask of taskForm.subtasks_to_create) {
+          const stRes = await axios.post(`${API_URL}/tasks`, {
+            project_id: taskForm.project_id,
+            parent_task_id: taskRes.data.task_id,
+            title: subtask.title,
+            description: subtask.description || '',
+            priority: taskForm.priority,
+            assigned_to: taskForm.assigned_to || null
+          }, { withCredentials: true });
+          subtaskIds.push(stRes.data.task_id);
+        }
+        // Update parent task with subtask IDs
+        await axios.patch(`${API_URL}/tasks/${taskRes.data.task_id}`, {
+          subtasks: subtaskIds
+        }, { withCredentials: true });
+      }
+      
+      // If nested under another task, update parent's subtasks array
+      if (taskForm.parent_task_id) {
+        const parentTask = tasks.find(t => t.task_id === taskForm.parent_task_id);
+        if (parentTask) {
+          await axios.patch(`${API_URL}/tasks/${taskForm.parent_task_id}`, {
+            subtasks: [...(parentTask.subtasks || []), taskRes.data.task_id]
+          }, { withCredentials: true });
+        }
+      }
+      
+      toast.success(taskForm.subtasks_to_create.length > 0 
+        ? `Task created with ${taskForm.subtasks_to_create.length} subtasks` 
+        : 'Task created');
       setIsTaskDialog(false);
-      setTaskForm({ project_id: '', title: '', description: '', priority: 'medium', assigned_to: '', start_date: '', end_date: '', reviewer_id: '' });
+      setTaskForm({ 
+        project_id: '', title: '', description: '', priority: 'medium', 
+        assigned_to: '', start_date: '', end_date: '', reviewer_id: '',
+        parent_task_id: '', subtasks_to_create: []
+      });
       fetchData();
     } catch (error) {
       toast.error('Failed to create task');
