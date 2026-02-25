@@ -270,18 +270,18 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ## Technical Notes
 
 ### Database Collections
-users, user_sessions, proposals, projects, tasks, time_logs, active_timers, companies, clients, fee_structure, team_salaries, cashflow_expenses, leaves, reimbursements, public_holidays, leave_accrual_policies, leave_balances, email_notifications, invoices, expenses
+users, user_sessions, proposals, projects, tasks, time_logs, active_timers, companies, clients, fee_structure, team_salaries, cashflow_expenses, leaves, reimbursements, public_holidays, leave_accrual_policies, leave_balances, email_notifications, invoices, expenses, team_invitations
 
-### Role Configuration (V11)
+### Role Configuration (V12)
 | Role | Level | View Financial | Manage Team | Invite Team | Edit All | Delete All |
 |------|-------|----------------|-------------|-------------|----------|------------|
 | Admin | 100 | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Manager | 70 | ✓ | ✓ | ✓ | ✓ | ✗ |
 | Team Lead | 50 | ✗ | ✓ | ✗ | ✗ | ✗ |
-| Finance | 40 | ✓ | ✗ | ✗ | ✗ | ✗ |
 | Team Member | 10 | ✗ | ✗ | ✗ | ✗ | ✗ |
 
 ### Mocked/Demo Features
 - Email notifications: Stored in `email_notifications` collection but not sent
+- Team invitations: Stored in `team_invitations` collection, email not sent
 - Google Drive: UI present but not functional
 - Zoho Sign: UI present but not functional
