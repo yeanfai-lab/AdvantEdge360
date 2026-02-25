@@ -447,8 +447,113 @@ async def convert_to_project(proposal_id: str, session_token: Optional[str] = Co
 async def update_proposal(proposal_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
+    # Get current proposal to save version history
+    current_proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not current_proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    # Check if content fields changed (for versioning)
+    version_fields = ['title', 'description', 'requirement', 'scope_area', 'final_proposal', 'amount', 'category']
+    content_changed = any(
+        field in updates and updates[field] != current_proposal.get(field)
+        for field in version_fields
+    )
+    
+    if content_changed:
+        # Save current state to version history
+        version_snapshot = {
+            "version": current_proposal.get("version", 1),
+            "title": current_proposal.get("title"),
+            "description": current_proposal.get("description"),
+            "requirement": current_proposal.get("requirement"),
+            "scope_area": current_proposal.get("scope_area"),
+            "final_proposal": current_proposal.get("final_proposal"),
+            "amount": current_proposal.get("amount"),
+            "category": current_proposal.get("category"),
+            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_by": user.user_id
+        }
+        
+        # Increment version number
+        new_version = current_proposal.get("version", 1) + 1
+        updates["version"] = new_version
+        
+        # Add to version history
+        await db.proposals.update_one(
+            {"proposal_id": proposal_id},
+            {"$push": {"version_history": version_snapshot}}
+        )
+    
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.proposals.update_one({"proposal_id": proposal_id}, {"$set": updates})
-    return {"message": "Proposal updated"}
+    return {"message": "Proposal updated", "version": updates.get("version", current_proposal.get("version", 1))}
+
+@api_router.get("/proposals/{proposal_id}/versions")
+async def get_proposal_versions(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    return {
+        "current_version": proposal.get("version", 1),
+        "version_history": proposal.get("version_history", [])
+    }
+
+@api_router.post("/proposals/{proposal_id}/restore-version/{version_number}")
+async def restore_proposal_version(proposal_id: str, version_number: int, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    proposal = await db.proposals.find_one({"proposal_id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    
+    version_history = proposal.get("version_history", [])
+    target_version = next((v for v in version_history if v["version"] == version_number), None)
+    
+    if not target_version:
+        raise HTTPException(status_code=404, detail="Version not found")
+    
+    # Save current state before restoring
+    current_snapshot = {
+        "version": proposal.get("version", 1),
+        "title": proposal.get("title"),
+        "description": proposal.get("description"),
+        "requirement": proposal.get("requirement"),
+        "scope_area": proposal.get("scope_area"),
+        "final_proposal": proposal.get("final_proposal"),
+        "amount": proposal.get("amount"),
+        "category": proposal.get("category"),
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "saved_by": user.user_id,
+        "note": "Auto-saved before restore"
+    }
+    
+    new_version = proposal.get("version", 1) + 1
+    
+    # Restore the target version content
+    restore_data = {
+        "title": target_version.get("title"),
+        "description": target_version.get("description"),
+        "requirement": target_version.get("requirement"),
+        "scope_area": target_version.get("scope_area"),
+        "final_proposal": target_version.get("final_proposal"),
+        "amount": target_version.get("amount"),
+        "category": target_version.get("category"),
+        "version": new_version,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.proposals.update_one(
+        {"proposal_id": proposal_id},
+        {
+            "$set": restore_data,
+            "$push": {"version_history": current_snapshot}
+        }
+    )
+    
+    return {"message": f"Restored to version {version_number}", "new_version": new_version}
 
 @api_router.get("/proposals/{proposal_id}", response_model=Proposal)
 async def get_proposal_detail(proposal_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
