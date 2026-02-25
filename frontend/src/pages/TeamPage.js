@@ -138,7 +138,7 @@ export const TeamPage = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {roles.map((role) => (
-            <div key={role.id} className={`p-4 rounded-lg border ${roleColors[role.id]}`}>
+            <div key={role.id} className={`p-4 rounded-lg border ${roleColors[role.id] || 'bg-muted'}`}>
               <h4 className="font-semibold mb-1">{formatRole(role.id)}</h4>
               <p className="text-xs mb-2 opacity-80">{role.description}</p>
               <div className="flex gap-2 flex-wrap">
@@ -155,6 +155,11 @@ export const TeamPage = () => {
                 {role.can_manage_team && (
                   <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-600 rounded flex items-center gap-1">
                     <Users className="h-3 w-3" /> Manage Team
+                  </span>
+                )}
+                {role.can_invite_team && (
+                  <span className="text-xs px-1.5 py-0.5 bg-purple-500/20 text-purple-600 rounded flex items-center gap-1">
+                    <UserPlus className="h-3 w-3" /> Can Invite
                   </span>
                 )}
               </div>
