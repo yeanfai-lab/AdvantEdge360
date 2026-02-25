@@ -72,6 +72,8 @@ export const ProjectDetailPage = () => {
     priority: 'medium',
     assigned_to: ''
   });
+  const [isEditProjectDialog, setIsEditProjectDialog] = useState(false);
+  const [projectForm, setProjectForm] = useState({});
 
   const fetchData = async () => {
     try {
