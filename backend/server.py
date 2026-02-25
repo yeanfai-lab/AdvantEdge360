@@ -1978,8 +1978,11 @@ async def get_clients(session_token: Optional[str] = Cookie(None), authorization
     
     clients = await db.clients.find({}, {"_id": 0}).to_list(1000)
     for client in clients:
-        if isinstance(client['created_at'], str):
-            client['created_at'] = datetime.fromisoformat(client['created_at'])
+        if client.get('created_at'):
+            if isinstance(client['created_at'], str):
+                client['created_at'] = datetime.fromisoformat(client['created_at'])
+        else:
+            client['created_at'] = datetime.now(timezone.utc)
     return clients
 
 @api_router.get("/clients/{client_id}", response_model=Client)
@@ -1990,8 +1993,11 @@ async def get_client(client_id: str, session_token: Optional[str] = Cookie(None)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     
-    if isinstance(client['created_at'], str):
-        client['created_at'] = datetime.fromisoformat(client['created_at'])
+    if client.get('created_at'):
+        if isinstance(client['created_at'], str):
+            client['created_at'] = datetime.fromisoformat(client['created_at'])
+    else:
+        client['created_at'] = datetime.now(timezone.utc)
     return Client(**client)
 
 @api_router.patch("/clients/{client_id}")
