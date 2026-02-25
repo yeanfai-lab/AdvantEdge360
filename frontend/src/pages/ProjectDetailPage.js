@@ -1017,6 +1017,86 @@ export const ProjectDetailPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={isEditProjectDialog} onOpenChange={setIsEditProjectDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateProject} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Project Name</label>
+              <Input
+                value={projectForm.name || ''}
+                onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Description</label>
+              <Textarea
+                value={projectForm.description || ''}
+                onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Client Name</label>
+                <Input
+                  value={projectForm.client_name || ''}
+                  onChange={(e) => setProjectForm({ ...projectForm, client_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Budget</label>
+                <Input
+                  type="number"
+                  value={projectForm.budget || ''}
+                  onChange={(e) => setProjectForm({ ...projectForm, budget: parseFloat(e.target.value) || null })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Start Date</label>
+                <Input
+                  type="date"
+                  value={projectForm.start_date || ''}
+                  onChange={(e) => setProjectForm({ ...projectForm, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">End Date</label>
+                <Input
+                  type="date"
+                  value={projectForm.end_date || ''}
+                  onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select value={projectForm.status || 'active'} onValueChange={(value) => setProjectForm({ ...projectForm, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditProjectDialog(false)}>Cancel</Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
