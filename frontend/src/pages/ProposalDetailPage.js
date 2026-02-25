@@ -183,6 +183,16 @@ export const ProposalDetailPage = () => {
     }
   };
 
+  const handleConfirm = async () => {
+    try {
+      await axios.post(`${API_URL}/proposals/${proposalId}/confirm`, {}, { withCredentials: true });
+      toast.success('Proposal confirmed');
+      fetchProposal();
+    } catch (error) {
+      toast.error('Failed to confirm proposal');
+    }
+  };
+
   const handleManualApproval = async () => {
     try {
       await axios.post(
@@ -221,6 +231,17 @@ export const ProposalDetailPage = () => {
       navigate('/projects');
     } catch (error) {
       toast.error('Failed to convert');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this proposal? This action cannot be undone.')) return;
+    try {
+      await axios.delete(`${API_URL}/proposals/${proposalId}`, { withCredentials: true });
+      toast.success('Proposal deleted');
+      navigate('/proposals');
+    } catch (error) {
+      toast.error('Failed to delete proposal');
     }
   };
 
