@@ -15,23 +15,44 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - **Status Workflow**: Draft → Pending Approval → Approved → Sent to Client → Signed → Converted
 - **Fields**: Title, Client, Category, Requirement, Scope/Area, Final Proposal, Amount
 - **Categories**: Individual-Residential, Housing, Commercial, Institutional, Hospitality
+- **Versioning System**: 
+  - Auto-saves version on content changes
+  - Version history panel with all revisions
+  - Restore previous version functionality
 - Internal approval workflow (Sender → Approver → Client)
+- Inline editing for all fields
 - Google Drive document attachment (DEMO MODE)
 - Zoho Sign integration (DEMO MODE)
 - Conversion to Project
+- **View Toggle**: Tile view and List view with sortable columns
 
 ### 3. Project Management
 - Integrated task management (tasks shown within project detail)
 - Completion percentage calculated from task statuses
 - Project stats (total, in progress, completed, overdue tasks)
 - Budget, timeline, milestones tracking
+- **View Toggle**: Tile view and List view with sortable columns
 
 ### 4. Task Management
 - **Statuses**: Not Started, In Progress, On Hold, Under Review, Completed
 - **Priorities**: Low, Medium, High, Urgent
+- **Sub-tasks**: Nested tasks under parent tasks with expand/collapse
 - Assignment, reviewer, comments
-- Review/approval workflow
+- **Comments System**:
+  - Add/Edit/Delete comments
+  - System comments for review actions
+  - Edit indicator for modified comments
+- **Review Workflow**:
+  - Send for Review
+  - Approve & Continue (completes task)
+  - Return to Owner (sends back with notes)
+  - Reject (with revision notes)
 - Start/End dates
+- **Built-in Time Tracker**:
+  - Start/Stop timer per task
+  - One active timer per user at a time
+  - Auto-logs time to task → project → client
+  - Total tracked time displayed per task
 
 ### 5. Dashboard
 - Statistics cards (clickable, navigate to respective pages)
@@ -47,6 +68,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - Task-level time logging
 - Billable/non-billable hours
 - Mobile-responsive
+- Timer integration from project detail page
 
 ### 8. Finance
 - Project budgets
@@ -66,6 +88,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - Tailwind CSS + shadcn/ui components
 - Custom theme: Teal/Dark Grey, PT Sans Narrow font
 - Axios for API calls
+- localStorage for view preferences
 
 ### Backend
 - FastAPI (Python)
@@ -74,6 +97,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ### Database
 - MongoDB (Motor async driver)
+- Collections: users, proposals, projects, tasks, time_logs, active_timers, companies, contact_persons
 
 ## Integrations (DEMO MODE)
 - **Google Drive**: For proposal document attachments
@@ -83,7 +107,18 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ## What's Been Implemented
 
-### December 2025 - Major Overhaul
+### December 2025 - V3 Enhancements
+- [x] Proposal versioning system (auto-save, history, restore)
+- [x] Tile/List view toggle for Proposals and Projects
+- [x] Sortable columns in list views
+- [x] Built-in time tracker (start/stop per task per user)
+- [x] Sub-tasks system with nesting
+- [x] Comment edit/delete functionality
+- [x] Enhanced reviewer actions (Approve & Continue, Return to Owner)
+- [x] Active timer banner display
+- [x] Inline editing for proposal fields
+
+### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
 - [x] ProposalDetailPage with full CRUD and approval controls
 - [x] Integrated Project/Task view (tasks within project detail)
@@ -91,8 +126,6 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [x] Dashboard My Tasks section
 - [x] Dashboard Team Kanban for managers
 - [x] Clickable navigation between pages
-- [x] Fixed proposal creation with new fields
-- [x] Fixed TasksPage Select component crash
 
 ### Previous Implementation
 - [x] All core module UI and backend routes
@@ -109,6 +142,7 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [ ] Full proposal sending workflow
 - [ ] Real Zoho Sign API integration (requires API keys)
 - [ ] Real Gmail notifications (requires API keys)
+- [ ] File attachments with cloud storage
 
 ### P2 - Medium Priority
 - [ ] PDF export for reports
@@ -127,7 +161,9 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - POST /api/proposals - Create proposal
 - GET /api/proposals - List proposals
 - GET /api/proposals/{id} - Get proposal detail
-- PATCH /api/proposals/{id} - Update proposal
+- PATCH /api/proposals/{id} - Update proposal (triggers versioning)
+- GET /api/proposals/{id}/versions - Get version history
+- POST /api/proposals/{id}/restore-version/{num} - Restore version
 - POST /api/proposals/{id}/send-for-internal-approval
 - POST /api/proposals/{id}/approve-internal
 - POST /api/proposals/{id}/return-to-sender
@@ -143,13 +179,23 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - GET /api/projects/{id}/stats - Get project stats
 
 ### Tasks
-- POST /api/tasks - Create task
+- POST /api/tasks - Create task (supports parent_task_id for subtasks)
 - GET /api/tasks - List tasks
+- GET /api/tasks/{id} - Get task with subtask details
 - PATCH /api/tasks/{id} - Update task
 - POST /api/tasks/{id}/add-comment
+- PATCH /api/tasks/{id}/comments/{cid} - Edit comment
+- DELETE /api/tasks/{id}/comments/{cid} - Delete comment
 - POST /api/tasks/{id}/send-for-review
 - POST /api/tasks/{id}/approve-review
+- POST /api/tasks/{id}/return-to-owner
 - POST /api/tasks/{id}/return-for-revision
+
+### Timer
+- POST /api/timer/start - Start timer for task
+- POST /api/timer/stop - Stop timer and log time
+- GET /api/timer/active - Get active timer
+- DELETE /api/timer/cancel - Cancel timer without logging
 
 ### Dashboard
 - GET /api/dashboard/my-tasks
@@ -180,10 +226,11 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 ├── memory/
 │   └── PRD.md
 └── test_reports/
-    └── iteration_2.json
+    ├── iteration_2.json
+    └── iteration_3.json
 ```
 
 ## Testing
-- Backend: pytest with API tests
+- Backend: pytest with API tests (100% pass rate)
 - Frontend: Playwright automation
-- All tests passing (100% success rate)
+- All features verified working
