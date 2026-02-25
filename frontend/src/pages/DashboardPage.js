@@ -145,10 +145,13 @@ export const DashboardPage = () => {
   const handleCreateTask = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/tasks`, taskForm, { withCredentials: true });
+      await axios.post(`${API_URL}/tasks`, {
+        ...taskForm,
+        project_id: taskForm.is_internal ? null : taskForm.project_id
+      }, { withCredentials: true });
       toast.success('Task created successfully');
       setTaskDialog(false);
-      setTaskForm({ project_id: '', title: '', description: '', priority: 'medium' });
+      setTaskForm({ project_id: '', is_internal: false, title: '', description: '', priority: 'medium' });
       navigate('/tasks');
     } catch (error) {
       toast.error('Failed to create task');
