@@ -9,14 +9,12 @@ export const LoginPage = () => {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-slate-900 relative"
-    >
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 relative">
       <div className="relative z-10 max-w-md w-full mx-4">
-        <div className="bg-card rounded-lg shadow-xl p-8 border">
+        <div className="bg-white rounded-lg shadow-xl p-8 border">
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4 bg-slate-900 rounded-lg p-4">
-              <img src="/logo.png" alt="AdvantEdge Advisory" className="h-16 w-auto" />
+            <div className="flex justify-center mb-4">
+              <img src="/logo.png" alt="AdvantEdge Advisory" className="h-20 w-auto" />
             </div>
             <p className="text-muted-foreground">
               Integrated Business Operations Platform
