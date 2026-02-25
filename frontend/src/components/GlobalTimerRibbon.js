@@ -3,26 +3,22 @@ import axios from 'axios';
 import { API_URL } from '../lib/utils';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
-import { Play, Square, X, Clock, ChevronRight } from 'lucide-react';
+import { Play, Pause, Square, X, Clock, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const formatTime = (minutes) => {
   const hrs = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  const secs = Math.floor((minutes % 1) * 60);
   if (hrs > 0) {
     return `${hrs}h ${mins}m`;
   }
   return `${mins}m`;
 };
 
-const formatElapsedTime = (startTime) => {
-  const start = new Date(startTime);
-  const now = new Date();
-  const diff = Math.floor((now - start) / 1000);
-  const hrs = Math.floor(diff / 3600);
-  const mins = Math.floor((diff % 3600) / 60);
-  const secs = diff % 60;
+const formatSeconds = (seconds) => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
   
   if (hrs > 0) {
     return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -32,14 +28,26 @@ const formatElapsedTime = (startTime) => {
 
 export const GlobalTimerRibbon = () => {
   const [activeTimer, setActiveTimer] = useState(null);
-  const [elapsedTime, setElapsedTime] = useState('0:00');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [billable, setBillable] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
   const fetchActiveTimer = async () => {
     try {
       const res = await axios.get(`${API_URL}/timer/active`, { withCredentials: true });
       if (res.data.active) {
         setActiveTimer(res.data);
+        setIsPaused(res.data.is_paused || false);
+        
+        // Calculate elapsed time
+        if (res.data.is_paused) {
+          setElapsedSeconds(res.data.paused_time || 0);
+        } else {
+          const start = new Date(res.data.start_time);
+          const now = new Date();
+          const elapsed = Math.floor((now - start) / 1000) + (res.data.paused_time || 0);
+          setElapsedSeconds(elapsed);
+        }
       } else {
         setActiveTimer(null);
       }
@@ -58,15 +66,33 @@ export const GlobalTimerRibbon = () => {
   // Update elapsed time every second
   useEffect(() => {
     let interval;
-    if (activeTimer) {
-      const updateTime = () => {
-        setElapsedTime(formatElapsedTime(activeTimer.start_time));
-      };
-      updateTime();
-      interval = setInterval(updateTime, 1000);
+    if (activeTimer && !isPaused) {
+      interval = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
     }
     return () => clearInterval(interval);
-  }, [activeTimer]);
+  }, [activeTimer, isPaused]);
+
+  const handlePauseTimer = async () => {
+    try {
+      await axios.post(`${API_URL}/timer/pause`, null, { withCredentials: true });
+      setIsPaused(true);
+      toast.success('Timer paused');
+    } catch (error) {
+      toast.error('Failed to pause timer');
+    }
+  };
+
+  const handleResumeTimer = async () => {
+    try {
+      await axios.post(`${API_URL}/timer/resume`, null, { withCredentials: true });
+      setIsPaused(false);
+      toast.success('Timer resumed');
+    } catch (error) {
+      toast.error('Failed to resume timer');
+    }
+  };
 
   const handleStopTimer = async () => {
     try {
@@ -103,7 +129,7 @@ export const GlobalTimerRibbon = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`}></div>
               <Clock className="h-4 w-4" />
             </div>
             
@@ -128,11 +154,15 @@ export const GlobalTimerRibbon = () => {
                 ({activeTimer.client_name})
               </span>
             )}
+            
+            {isPaused && (
+              <span className="px-2 py-0.5 text-xs bg-yellow-500 text-yellow-900 rounded font-semibold">PAUSED</span>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
             <div className="font-mono text-lg font-bold tabular-nums">
-              {elapsedTime}
+              {formatSeconds(elapsedSeconds)}
             </div>
             
             <div className="flex items-center gap-2 text-sm">
@@ -145,6 +175,27 @@ export const GlobalTimerRibbon = () => {
             </div>
             
             <div className="flex items-center gap-1">
+              {isPaused ? (
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={handleResumeTimer}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  <Play className="mr-1 h-3 w-3" />
+                  Resume
+                </Button>
+              ) : (
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={handlePauseTimer}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-yellow-900"
+                >
+                  <Pause className="mr-1 h-3 w-3" />
+                  Pause
+                </Button>
+              )}
               <Button 
                 size="sm" 
                 variant="secondary"
