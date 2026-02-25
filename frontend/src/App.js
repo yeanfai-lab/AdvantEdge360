@@ -19,6 +19,9 @@ import { ClientsPage } from './pages/ClientsPage';
 import { ClientDetailPage } from './pages/ClientDetailPage';
 import { FinancePage } from './pages/FinancePage';
 import { ReportsPage } from './pages/ReportsPage';
+import { LeaveReimbursementPage } from './pages/LeaveReimbursementPage';
+import { PerformanceReviewPage } from './pages/PerformanceReviewPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import './App.css';
 
 function TimerWrapper() {
