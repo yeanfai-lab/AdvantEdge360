@@ -1787,6 +1787,7 @@ async def get_user_permissions(session_token: Optional[str] = Cookie(None), auth
         "permissions": {
             "can_view_financial": role_config["can_view_financial"],
             "can_manage_team": role_config["can_manage_team"],
+            "can_invite_team": role_config.get("can_invite_team", False),
             "can_edit_all": role_config["can_edit_all"],
             "can_delete_all": role_config["can_delete_all"]
         }
