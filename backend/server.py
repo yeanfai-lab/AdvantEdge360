@@ -54,22 +54,16 @@ ROLES = {
         "level": 100,
         "can_view_financial": True,
         "can_manage_team": True,
+        "can_invite_team": True,
         "can_edit_all": True,
         "can_delete_all": True,
         "description": "Full access to all features"
-    },
-    "supervisor": {
-        "level": 80,
-        "can_view_financial": False,  # No financial/commercial data
-        "can_manage_team": True,  # Can manage assigned team members
-        "can_edit_all": True,  # Can edit operational data
-        "can_delete_all": False,
-        "description": "Operational access, no financial data"
     },
     "manager": {
         "level": 70,
         "can_view_financial": True,
         "can_manage_team": True,
+        "can_invite_team": True,
         "can_edit_all": True,
         "can_delete_all": False,
         "description": "Project management with financial access"
@@ -77,18 +71,29 @@ ROLES = {
     "team_lead": {
         "level": 50,
         "can_view_financial": False,
-        "can_manage_team": False,
+        "can_manage_team": True,
+        "can_invite_team": False,
         "can_edit_all": False,
         "can_delete_all": False,
-        "description": "Team coordination, limited management"
+        "description": "Team coordination and management"
     },
     "team_member": {
         "level": 10,
         "can_view_financial": False,
         "can_manage_team": False,
+        "can_invite_team": False,
         "can_edit_all": False,
         "can_delete_all": False,
         "description": "Own tasks only"
+    },
+    "finance": {
+        "level": 40,
+        "can_view_financial": True,
+        "can_manage_team": False,
+        "can_invite_team": False,
+        "can_edit_all": False,
+        "can_delete_all": False,
+        "description": "Financial data access only"
     }
 }
 
