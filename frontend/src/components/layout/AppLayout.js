@@ -190,25 +190,7 @@ export const AppLayout = ({ children }) => {
             <h2 className="text-xl font-heading font-bold">AdvantEdge360</h2>
           </div>
           <nav className="flex-1 p-4 space-y-2">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => navigate(item.href)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors',
-                    isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                  data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.name}
-                </button>
-              );
-            })}
+            {navigation.map((item) => renderNavItem(item, false))}
           </nav>
           <div className="p-4 border-t">
             <div className="flex items-center gap-3 mb-4">
