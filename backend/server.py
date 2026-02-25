@@ -20,6 +20,10 @@ from google.auth.transport.requests import Request as GoogleRequest
 import warnings
 import base64
 import json
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 from services.pdf_service import (
     create_projects_pdf,
     create_tasks_pdf,
