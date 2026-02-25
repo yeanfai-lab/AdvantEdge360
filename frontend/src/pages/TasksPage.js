@@ -66,7 +66,9 @@ export const TasksPage = () => {
     assigned_to: '',
     start_date: '',
     end_date: '',
-    reviewer_id: ''
+    reviewer_id: '',
+    parent_task_id: '',  // For nesting under existing task
+    subtasks_to_create: []  // Auto-create subtasks
   });
   
   const [subtaskForm, setSubtaskForm] = useState({
@@ -75,6 +77,8 @@ export const TasksPage = () => {
     priority: 'medium',
     assigned_to: ''
   });
+  
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   
   const [editForm, setEditForm] = useState({});
 
