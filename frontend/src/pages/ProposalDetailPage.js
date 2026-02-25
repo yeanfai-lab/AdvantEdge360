@@ -302,24 +302,109 @@ export const ProposalDetailPage = () => {
           Back to Proposals
         </Button>
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-heading font-bold tracking-tight">{proposal.title}</h1>
+              {editingField === 'title' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    value={fieldValue}
+                    onChange={(e) => setFieldValue(e.target.value)}
+                    className="text-2xl font-bold w-80"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={() => handleInlineEdit('title', fieldValue)}><Check className="h-4 w-4" /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}><X className="h-4 w-4" /></Button>
+                </div>
+              ) : (
+                <h1 
+                  className="text-4xl font-heading font-bold tracking-tight cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2"
+                  onClick={() => startInlineEdit('title', proposal.title)}
+                >
+                  {proposal.title}
+                  <Edit className="h-4 w-4 text-muted-foreground inline ml-2 opacity-50" />
+                </h1>
+              )}
               <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">v{proposal.version || 1}</span>
             </div>
-            <p className="text-lg text-muted-foreground">{proposal.client_name}</p>
+            {editingField === 'client_name' ? (
+              <div className="flex gap-2 items-center">
+                <Input
+                  value={fieldValue}
+                  onChange={(e) => setFieldValue(e.target.value)}
+                  className="w-60"
+                  autoFocus
+                />
+                <Button size="sm" onClick={() => handleInlineEdit('client_name', fieldValue)}><Check className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}><X className="h-4 w-4" /></Button>
+              </div>
+            ) : (
+              <p 
+                className="text-lg text-muted-foreground cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 inline-block"
+                onClick={() => startInlineEdit('client_name', proposal.client_name)}
+              >
+                {proposal.client_name}
+                <Edit className="h-3 w-3 text-muted-foreground inline ml-2 opacity-50" />
+              </p>
+            )}
           </div>
           <div className="flex gap-2 items-start">
             <Button variant="outline" size="sm" onClick={fetchVersionHistory}>
               <History className="mr-2 h-4 w-4" />
               History
             </Button>
-            <span className="px-3 py-1 text-sm font-semibold rounded-full bg-chart-2/20 text-chart-2">
-              {proposal.status.replace('_', ' ').toUpperCase()}
-            </span>
-            {proposal.category && (
-              <span className="px-3 py-1 text-sm font-semibold rounded-full bg-muted">
+            {editingField === 'status' ? (
+              <div className="flex gap-2 items-center">
+                <Select value={fieldValue} onValueChange={(value) => setFieldValue(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={() => handleInlineEdit('status', fieldValue)}><Check className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}><X className="h-4 w-4" /></Button>
+              </div>
+            ) : (
+              <span 
+                className="px-3 py-1 text-sm font-semibold rounded-full bg-chart-2/20 text-chart-2 cursor-pointer hover:opacity-80"
+                onClick={() => startInlineEdit('status', proposal.status)}
+              >
+                {proposal.status.replace('_', ' ').toUpperCase()}
+                <Edit className="h-3 w-3 inline ml-1 opacity-50" />
+              </span>
+            )}
+            {editingField === 'category' ? (
+              <div className="flex gap-2 items-center">
+                <Select value={fieldValue} onValueChange={(value) => setFieldValue(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={() => handleInlineEdit('category', fieldValue)}><Check className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingField(null)}><X className="h-4 w-4" /></Button>
+              </div>
+            ) : proposal.category ? (
+              <span 
+                className="px-3 py-1 text-sm font-semibold rounded-full bg-muted cursor-pointer hover:opacity-80"
+                onClick={() => startInlineEdit('category', proposal.category)}
+              >
                 {proposal.category}
+                <Edit className="h-3 w-3 inline ml-1 opacity-50" />
+              </span>
+            ) : (
+              <span 
+                className="px-3 py-1 text-sm font-semibold rounded-full bg-muted/50 text-muted-foreground cursor-pointer hover:opacity-80"
+                onClick={() => startInlineEdit('category', '')}
+              >
+                + Add Category
               </span>
             )}
           </div>
