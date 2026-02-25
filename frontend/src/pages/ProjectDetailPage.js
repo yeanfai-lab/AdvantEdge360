@@ -482,62 +482,94 @@ export const ProjectDetailPage = () => {
 
       {/* Tasks List */}
       <Card className="p-6">
-        <h3 className="text-lg font-heading font-semibold mb-4">Tasks ({tasks.length})</h3>
-        {tasks.length === 0 ? (
+        <h3 className="text-lg font-heading font-semibold mb-4">Tasks ({tasks.filter(t => !t.parent_task_id).length})</h3>
+        {tasks.filter(t => !t.parent_task_id).length === 0 ? (
           <div className="text-center py-8">
             <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No tasks yet. Create your first task to get started.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {tasks.map((task) => (
-              <div 
-                key={task.task_id} 
-                className="p-4 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
-                onClick={() => openTaskDetail(task)}
-                data-testid={`task-item-${task.task_id}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium">{task.title}</h4>
-                      {getStatusBadge(task.status)}
-                      {getPriorityBadge(task.priority)}
-                    </div>
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{task.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {task.assigned_to && (
-                        <span>Assigned: {teamMembers.find(m => m.user_id === task.assigned_to)?.name || 'Unknown'}</span>
-                      )}
-                      {task.end_date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Due: {task.end_date}
-                        </span>
-                      )}
-                      {task.comments?.length > 0 && (
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          {task.comments.length}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <Select 
-                    value={task.status} 
-                    onValueChange={(value) => { 
-                      event?.stopPropagation(); 
-                      handleStatusChange(task.task_id, value); 
-                    }}
+            {tasks.filter(t => !t.parent_task_id).map((task) => {
+              const subtasks = tasks.filter(t => t.parent_task_id === task.task_id);
+              const isExpanded = expandedTasks[task.task_id];
+              
+              return (
+                <div key={task.task_id}>
+                  <div 
+                    className="p-4 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => openTaskDetail(task)}
+                    data-testid={`task-item-${task.task_id}`}
                   >
-                    <SelectTrigger className="w-36" onClick={(e) => e.stopPropagation()}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {taskStatuses.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {subtasks.length > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedTasks(prev => ({ ...prev, [task.task_id]: !prev[task.task_id] }));
+                              }}
+                              className="p-1 hover:bg-muted rounded"
+                            >
+                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </button>
+                          )}
+                          <h4 className="font-medium">{task.title}</h4>
+                          {getStatusBadge(task.status)}
+                          {getPriorityBadge(task.priority)}
+                          {subtasks.length > 0 && (
+                            <span className="text-xs text-muted-foreground">({subtasks.length} subtasks)</span>
+                          )}
+                        </div>
+                        {task.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{task.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {task.assigned_to && (
+                            <span>Assigned: {teamMembers.find(m => m.user_id === task.assigned_to)?.name || 'Unknown'}</span>
+                          )}
+                          {task.end_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Due: {task.end_date}
+                            </span>
+                          )}
+                          {task.comments?.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" />
+                              {task.comments.length}
+                            </span>
+                          )}
+                          {task.total_tracked_time > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {formatTime(task.total_tracked_time)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        {!activeTimer && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleStartTimer(task.task_id)}
+                            title="Start Timer"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Select 
+                          value={task.status} 
+                          onValueChange={(value) => handleStatusChange(task.task_id, value)}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {taskStatuses.map((status) => (
+                              <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
