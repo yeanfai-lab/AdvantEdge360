@@ -245,9 +245,41 @@ export const ProjectDetailPage = () => {
       const taskRes = await axios.get(`${API_URL}/tasks/${selectedTask.task_id}`, { withCredentials: true });
       setSelectedTask(taskRes.data);
       fetchData();
-      setTasks(taskRes.data);
     } catch (error) {
       toast.error('Failed to add comment');
+    }
+  };
+
+  const handleEditComment = async (commentId) => {
+    if (!editCommentText.trim()) return;
+    try {
+      await axios.patch(
+        `${API_URL}/tasks/${selectedTask.task_id}/comments/${commentId}`,
+        null,
+        { params: { new_comment: editCommentText }, withCredentials: true }
+      );
+      toast.success('Comment updated');
+      setEditingComment(null);
+      setEditCommentText('');
+      const taskRes = await axios.get(`${API_URL}/tasks/${selectedTask.task_id}`, { withCredentials: true });
+      setSelectedTask(taskRes.data);
+    } catch (error) {
+      toast.error('Failed to update comment');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Delete this comment?')) return;
+    try {
+      await axios.delete(
+        `${API_URL}/tasks/${selectedTask.task_id}/comments/${commentId}`,
+        { withCredentials: true }
+      );
+      toast.success('Comment deleted');
+      const taskRes = await axios.get(`${API_URL}/tasks/${selectedTask.task_id}`, { withCredentials: true });
+      setSelectedTask(taskRes.data);
+    } catch (error) {
+      toast.error('Failed to delete comment');
     }
   };
 
@@ -259,6 +291,7 @@ export const ProjectDetailPage = () => {
         { params: { reviewer_id: reviewerId }, withCredentials: true }
       );
       toast.success('Task sent for review');
+      setIsTaskDetailDialog(false);
       fetchData();
     } catch (error) {
       toast.error('Failed to send for review');
@@ -277,6 +310,22 @@ export const ProjectDetailPage = () => {
       fetchData();
     } catch (error) {
       toast.error('Failed to approve');
+    }
+  };
+
+  const handleReturnToOwner = async (taskId) => {
+    const notes = window.prompt('Enter notes for the task owner (optional):');
+    try {
+      await axios.post(
+        `${API_URL}/tasks/${taskId}/return-to-owner`,
+        null,
+        { params: { notes }, withCredentials: true }
+      );
+      toast.success('Task returned to owner');
+      setIsTaskDetailDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to return task');
     }
   };
 
