@@ -61,6 +61,7 @@ export const TasksPage = () => {
   
   const [taskForm, setTaskForm] = useState({
     project_id: '',
+    is_internal: false,
     title: '',
     description: '',
     priority: 'medium',
