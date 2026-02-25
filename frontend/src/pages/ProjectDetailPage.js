@@ -821,10 +821,26 @@ export const ProjectDetailPage = () => {
       <Dialog open={isTaskDetailDialog} onOpenChange={setIsTaskDetailDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedTask?.title}
-              {selectedTask && getStatusBadge(selectedTask.status)}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                {selectedTask?.title}
+                {selectedTask && getStatusBadge(selectedTask.status)}
+              </DialogTitle>
+              {selectedTask && (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setEditTaskForm(selectedTask);
+                    setIsEditTaskDialog(true);
+                  }}>
+                    <Edit className="mr-1 h-3 w-3" />
+                    Edit
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteTask(selectedTask.task_id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </DialogHeader>
           {selectedTask && (
             <div className="space-y-6">
