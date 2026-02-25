@@ -1019,10 +1019,20 @@ async def get_team_tasks(session_token: Optional[str] = Cookie(None), authorizat
 async def create_time_log(payload: TimeLogCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
     
+    # Get task details for project/client info
+    task = await db.tasks.find_one({"task_id": payload.task_id}, {"_id": 0})
+    project_id = task.get("project_id") if task else None
+    client_name = None
+    if project_id:
+        project = await db.projects.find_one({"project_id": project_id}, {"_id": 0})
+        client_name = project.get("client_name") if project else None
+    
     log_id = f"log_{uuid.uuid4().hex[:12]}"
     log_doc = {
         "log_id": log_id,
         "task_id": payload.task_id,
+        "project_id": project_id,
+        "client_name": client_name,
         "user_id": user.user_id,
         "duration_minutes": payload.duration_minutes,
         "description": payload.description,
@@ -1032,6 +1042,13 @@ async def create_time_log(payload: TimeLogCreate, session_token: Optional[str] =
     }
     
     await db.time_logs.insert_one(log_doc)
+    
+    # Update task's total tracked time
+    await db.tasks.update_one(
+        {"task_id": payload.task_id},
+        {"$inc": {"total_tracked_time": payload.duration_minutes}}
+    )
+    
     log_doc['created_at'] = datetime.fromisoformat(log_doc['created_at'])
     return TimeLog(**log_doc)
 
@@ -1048,6 +1065,137 @@ async def get_time_logs(task_id: Optional[str] = None, session_token: Optional[s
         if isinstance(log['created_at'], str):
             log['created_at'] = datetime.fromisoformat(log['created_at'])
     return logs
+
+# ========== TIMER ROUTES (Start/Stop) ==========
+
+@api_router.post("/timer/start")
+async def start_timer(task_id: str, description: Optional[str] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Check if user already has an active timer
+    existing_timer = await db.active_timers.find_one({"user_id": user.user_id}, {"_id": 0})
+    if existing_timer:
+        raise HTTPException(status_code=400, detail="You already have an active timer. Stop it first.")
+    
+    # Get task details
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    project_id = task.get("project_id")
+    client_name = None
+    if project_id:
+        project = await db.projects.find_one({"project_id": project_id}, {"_id": 0})
+        client_name = project.get("client_name") if project else None
+    
+    timer_id = f"timer_{uuid.uuid4().hex[:12]}"
+    timer_doc = {
+        "timer_id": timer_id,
+        "user_id": user.user_id,
+        "task_id": task_id,
+        "task_title": task.get("title"),
+        "project_id": project_id,
+        "client_name": client_name,
+        "start_time": datetime.now(timezone.utc).isoformat(),
+        "description": description
+    }
+    
+    await db.active_timers.insert_one(timer_doc)
+    
+    return {
+        "message": "Timer started",
+        "timer_id": timer_id,
+        "start_time": timer_doc["start_time"],
+        "task_id": task_id,
+        "task_title": task.get("title")
+    }
+
+@api_router.post("/timer/stop")
+async def stop_timer(description: Optional[str] = None, billable: bool = True, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Get active timer
+    timer = await db.active_timers.find_one({"user_id": user.user_id}, {"_id": 0})
+    if not timer:
+        raise HTTPException(status_code=404, detail="No active timer found")
+    
+    start_time = datetime.fromisoformat(timer["start_time"])
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
+    end_time = datetime.now(timezone.utc)
+    duration = end_time - start_time
+    duration_minutes = int(duration.total_seconds() / 60)
+    
+    # Create time log
+    log_id = f"log_{uuid.uuid4().hex[:12]}"
+    log_doc = {
+        "log_id": log_id,
+        "task_id": timer["task_id"],
+        "project_id": timer.get("project_id"),
+        "client_name": timer.get("client_name"),
+        "user_id": user.user_id,
+        "duration_minutes": duration_minutes,
+        "description": description or timer.get("description", ""),
+        "date": end_time.strftime("%Y-%m-%d"),
+        "start_time": timer["start_time"],
+        "end_time": end_time.isoformat(),
+        "billable": billable,
+        "created_at": end_time.isoformat()
+    }
+    
+    await db.time_logs.insert_one(log_doc)
+    
+    # Update task's total tracked time
+    await db.tasks.update_one(
+        {"task_id": timer["task_id"]},
+        {"$inc": {"total_tracked_time": duration_minutes}}
+    )
+    
+    # Delete active timer
+    await db.active_timers.delete_one({"user_id": user.user_id})
+    
+    return {
+        "message": "Timer stopped",
+        "duration_minutes": duration_minutes,
+        "log_id": log_id,
+        "task_id": timer["task_id"]
+    }
+
+@api_router.get("/timer/active")
+async def get_active_timer(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    timer = await db.active_timers.find_one({"user_id": user.user_id}, {"_id": 0})
+    if not timer:
+        return {"active": False}
+    
+    start_time = datetime.fromisoformat(timer["start_time"])
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
+    elapsed = datetime.now(timezone.utc) - start_time
+    elapsed_minutes = int(elapsed.total_seconds() / 60)
+    
+    return {
+        "active": True,
+        "timer_id": timer["timer_id"],
+        "task_id": timer["task_id"],
+        "task_title": timer.get("task_title"),
+        "project_id": timer.get("project_id"),
+        "client_name": timer.get("client_name"),
+        "start_time": timer["start_time"],
+        "elapsed_minutes": elapsed_minutes,
+        "description": timer.get("description")
+    }
+
+@api_router.delete("/timer/cancel")
+async def cancel_timer(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    result = await db.active_timers.delete_one({"user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="No active timer found")
+    
+    return {"message": "Timer cancelled"}
 
 # ========== TEAM ROUTES ==========
 
