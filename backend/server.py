@@ -477,13 +477,37 @@ async def create_session(payload: SessionCreate, response: Response):
                 }}
             )
         else:
+            # Check if there's a pending invitation for this email
+            invitation = await db.team_invitations.find_one({
+                "email": data["email"],
+                "status": "pending"
+            })
+            
+            # Determine role - use invitation role if exists, otherwise first user is admin
+            user_count = await db.users.count_documents({})
+            if invitation:
+                role = invitation["role"]
+                # Mark invitation as accepted
+                await db.team_invitations.update_one(
+                    {"invitation_id": invitation["invitation_id"]},
+                    {"$set": {
+                        "status": "accepted",
+                        "accepted_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+            elif user_count == 0:
+                role = "admin"  # First user is admin
+            else:
+                role = "team_member"  # Default role for uninvited users
+            
             user_doc = {
                 "user_id": user_id,
                 "email": data["email"],
                 "name": data["name"],
                 "picture": data.get("picture"),
-                "role": "admin",
+                "role": role,
                 "skills": [],
+                "date_of_joining": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.users.insert_one(user_doc)
