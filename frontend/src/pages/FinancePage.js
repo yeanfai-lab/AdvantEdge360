@@ -794,6 +794,12 @@ export const FinancePage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox 
+                        checked={selectedFeeItems.length === filteredFeeStructure.length && filteredFeeStructure.length > 0}
+                        onCheckedChange={handleSelectAllFeeItems}
+                      />
+                    </TableHead>
                     <TableHead>Stage</TableHead>
                     <TableHead>Deliverable</TableHead>
                     <TableHead className="text-right">%</TableHead>
@@ -807,7 +813,13 @@ export const FinancePage = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredFeeStructure.map((item) => (
-                    <TableRow key={item.item_id}>
+                    <TableRow key={item.item_id} className={selectedFeeItems.includes(item.item_id) ? 'bg-muted/50' : ''}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedFeeItems.includes(item.item_id)}
+                          onCheckedChange={() => handleToggleFeeItem(item.item_id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{item.stage}</TableCell>
                       <TableCell>{item.deliverable}</TableCell>
                       <TableCell className="text-right">{item.percentage}%</TableCell>
