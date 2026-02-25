@@ -330,7 +330,6 @@ export const TeamPage = () => {
                 <Select 
                   value={editForm.role} 
                   onValueChange={(value) => setEditForm({ ...editForm, role: value })}
-                  disabled={user?.role === 'supervisor'} // Supervisors can't change roles
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -339,16 +338,13 @@ export const TeamPage = () => {
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.id}>
                         <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${roleColors[role.id].split(' ')[0]}`}></span>
+                          <span className={`w-2 h-2 rounded-full ${roleColors[role.id]?.split(' ')[0] || 'bg-muted'}`}></span>
                           {formatRole(role.id)}
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {user?.role === 'supervisor' && (
-                  <p className="text-xs text-muted-foreground mt-1">Supervisors cannot change roles</p>
-                )}
               </div>
               
               <div>
