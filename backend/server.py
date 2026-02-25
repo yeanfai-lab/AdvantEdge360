@@ -2752,6 +2752,92 @@ async def export_overview_pdf(session_token: Optional[str] = Cookie(None), autho
         headers={"Content-Disposition": "attachment; filename=overview_report.pdf"}
     )
 
+# Custom Report PDF Export
+@api_router.post("/reports/export-custom-pdf")
+async def export_custom_report_pdf(payload: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    report_name = payload.get('report_name', 'Custom Report')
+    module = payload.get('module', 'Unknown')
+    fields = payload.get('fields', [])
+    data = payload.get('data', [])
+    
+    pdf_buffer = io.BytesIO()
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=landscape(letter))
+    elements = []
+    
+    # Title
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=18, spaceAfter=20)
+    elements.append(Paragraph(report_name, title_style))
+    elements.append(Paragraph(f"Module: {module.replace('_', ' ').title()}", styles['Normal']))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Paragraph(f"Records: {len(data)}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Table
+    if data and fields:
+        # Create header labels
+        field_labels = {
+            'name': 'Name', 'email': 'Email', 'phone': 'Phone', 'company_name': 'Company',
+            'status': 'Status', 'budget': 'Budget', 'client_name': 'Client', 'amount': 'Amount',
+            'category': 'Category', 'date': 'Date', 'user_name': 'Employee', 'leave_type': 'Leave Type',
+            'start_date': 'Start Date', 'end_date': 'End Date', 'days': 'Days', 'reason': 'Reason',
+            'title': 'Title', 'project_name': 'Project', 'priority': 'Priority', 'assignee_name': 'Assignee',
+            'duration_minutes': 'Duration', 'billable': 'Billable', 'stage': 'Stage', 'deliverable': 'Deliverable',
+            'percentage': '%', 'deliverable_status': 'Deliverable Status', 'invoice_status': 'Invoice Status',
+            'payment_status': 'Payment Status', 'industry': 'Industry', 'website': 'Website',
+            'business_address': 'Address', 'gst_number': 'GST', 'pan_number': 'PAN', 'role': 'Role',
+            'description': 'Description', 'position': 'Position', 'created_at': 'Created', 'completion_percentage': 'Completion %',
+            'tentative_billing_date': 'Billing Date', 'date_of_joining': 'DOJ', 'project_id': 'Project ID'
+        }
+        
+        headers = [field_labels.get(f, f) for f in fields]
+        table_data = [headers]
+        
+        for row in data[:100]:  # Limit to 100 rows
+            row_data = []
+            for f in fields:
+                value = row.get(f, '')
+                if value is None:
+                    value = ''
+                elif isinstance(value, bool):
+                    value = 'Yes' if value else 'No'
+                elif f in ['amount', 'budget'] and isinstance(value, (int, float)):
+                    value = f"INR {value:,.0f}"
+                elif f == 'duration_minutes' and isinstance(value, (int, float)):
+                    value = f"{value:.0f} min"
+                row_data.append(str(value)[:30])  # Truncate long values
+            table_data.append(row_data)
+        
+        # Create table with auto-sizing
+        col_widths = [min(100, max(50, len(str(h)) * 8)) for h in headers]
+        table = Table(table_data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('TOPPADDING', (0, 1), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.gray),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f7fafc')])
+        ]))
+        elements.append(table)
+    
+    doc.build(elements)
+    pdf_buffer.seek(0)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={report_name.replace(' ', '_')}.pdf"}
+    )
+
 # ========== FINANCE MODELS & ROUTES ==========
 
 class Invoice(BaseModel):
