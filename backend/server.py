@@ -434,8 +434,8 @@ async def convert_to_project(proposal_id: str, session_token: Optional[str] = Co
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
     
-    if proposal["status"] not in ["approved", "signed"]:
-        raise HTTPException(status_code=400, detail="Proposal must be approved or signed first")
+    if proposal["status"] not in ["approved", "signed", "confirmed"]:
+        raise HTTPException(status_code=400, detail="Proposal must be approved, confirmed, or signed first")
     
     project_id = f"proj_{uuid.uuid4().hex[:12]}"
     project_doc = {
