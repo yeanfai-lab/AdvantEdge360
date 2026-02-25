@@ -255,7 +255,7 @@ export const ProposalDetailPage = () => {
 
   const isCreator = proposal.created_by === user?.user_id;
   const isApprover = proposal.approver_id === user?.user_id;
-  const canEdit = isCreator && ['draft', 'returned'].includes(proposal.status);
+  const canEdit = true; // Allow editing for all authenticated users
   const canApprove = isApprover && proposal.status === 'pending_approval';
 
   const InlineEditField = ({ field, value, label, multiline = false }) => {
