@@ -896,6 +896,10 @@ async def get_tasks(project_id: Optional[str] = None, session_token: Optional[st
     for task in tasks:
         if isinstance(task['created_at'], str):
             task['created_at'] = datetime.fromisoformat(task['created_at'])
+    
+    # Apply role-based filtering
+    tasks = filter_resources_by_role(user, tasks, "task")
+    
     return tasks
 
 @api_router.patch("/tasks/{task_id}")
