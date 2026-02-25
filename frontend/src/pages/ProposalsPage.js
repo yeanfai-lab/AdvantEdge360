@@ -461,6 +461,76 @@ export const ProposalsPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Send for Approval Dialog */}
+      <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send for Internal Approval</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Select Approver</label>
+              <Select value={selectedApprover} onValueChange={setSelectedApprover}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an approver" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.filter(m => ['admin', 'manager'].includes(m.role)).map((member) => (
+                    <SelectItem key={member.user_id} value={member.user_id}>
+                      {member.name} ({member.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The proposal will be sent to the selected approver for review before being sent to the client.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSendForApproval}>
+                <UserCheck className="mr-2 h-4 w-4" />
+                Send for Approval
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Proposal Dialog */}
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Proposal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm">
+              Are you sure you want to confirm this proposal? This indicates that the client has accepted the proposal.
+            </p>
+            {selectedProposal && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-semibold">{selectedProposal.title}</p>
+                <p className="text-sm text-muted-foreground">{selectedProposal.client_name}</p>
+                {selectedProposal.amount && (
+                  <p className="text-lg font-mono mt-2">${selectedProposal.amount.toLocaleString()}</p>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmProposal} className="bg-green-600 hover:bg-green-700">
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Confirm Proposal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {proposals.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
