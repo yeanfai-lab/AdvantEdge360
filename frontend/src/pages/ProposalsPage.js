@@ -49,6 +49,8 @@ export const ProposalsPage = () => {
     scope_area: ''
   });
 
+  const [clients, setClients] = useState([]);
+
   useEffect(() => {
     localStorage.setItem('proposalsViewMode', viewMode);
   }, [viewMode]);
