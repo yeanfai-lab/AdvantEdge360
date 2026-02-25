@@ -183,10 +183,12 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [ ] Real Gmail notifications (requires API keys)
 - [ ] File attachments with cloud storage
 
-### P2 - Medium Priority
-- [x] PDF export for reports (COMPLETED - Dec 2025)
-- [x] Custom hooks for frontend state management (COMPLETED - Dec 2025)
-- [ ] Backend modular refactoring (partial - models/services/utils created)
+### P2 - Medium Priority (Phase 2: Team Management)
+- [ ] Onboarding forms for new hires (personal info, bank details, emergency contacts, education, work experience)
+- [ ] Leave applications CRUD + approval workflow (Casual, Sick, Earned/Annual, Unpaid, WFH)
+- [ ] Reimbursements CRUD + approval workflow (Travel, Equipment, Office Supplies, Client Entertainment, Other)
+- [ ] Performance reviews CRUD + approval workflow
+- [ ] Supervisor dashboard for team requests
 - [ ] Native mobile app for time tracking
 
 ## API Endpoints
