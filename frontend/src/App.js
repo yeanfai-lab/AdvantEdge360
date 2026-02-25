@@ -1,9 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
+import { GlobalTimerRibbon } from './components/GlobalTimerRibbon';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { DashboardPage } from './pages/DashboardPage';
@@ -20,6 +21,12 @@ import { FinancePage } from './pages/FinancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import './App.css';
 
+function TimerWrapper() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <GlobalTimerRibbon />;
+}
+
 function AppRouter() {
   const location = useLocation();
 
@@ -28,11 +35,13 @@ function AppRouter() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route
-        path="/dashboard"
+    <>
+      <TimerWrapper />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/dashboard"
         element={
           <ProtectedRoute>
             <AppLayout>
