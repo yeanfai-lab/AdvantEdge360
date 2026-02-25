@@ -123,6 +123,9 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [x] Custom React hooks (useProposals, useProjects, useTasks, useTimer)
 - [x] Backend modular structure started (models, services, utils)
 - [x] Export dropdown menus with CSV/PDF options
+- [x] Proposal action dropdown with workflow actions (Send for Approval, Send to Client, Confirm, Convert)
+- [x] Enhanced filtering on Tasks page (by priority, assignee, project)
+- [x] Global timer ribbon sticky positioning for better UX
 
 ### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
