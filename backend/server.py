@@ -1415,18 +1415,28 @@ async def get_team_tasks(session_token: Optional[str] = Cookie(None), authorizat
     
     # Get all users
     team_members = await db.users.find({}, {"_id": 0}).to_list(1000)
+    user_ids = [member["user_id"] for member in team_members]
     
+    # Optimized: Batch query - fetch ALL relevant tasks in ONE query
+    all_tasks = await db.tasks.find({
+        "assigned_to": {"$in": user_ids},
+        "status": {"$nin": ["not_started", "completed"]}
+    }, {"_id": 0}).to_list(10000)
+    
+    # Group tasks by user_id in memory
+    tasks_by_user = {}
+    for task in all_tasks:
+        if isinstance(task.get('created_at'), str):
+            task['created_at'] = datetime.fromisoformat(task['created_at'])
+        assigned_to = task.get("assigned_to")
+        if assigned_to not in tasks_by_user:
+            tasks_by_user[assigned_to] = []
+        tasks_by_user[assigned_to].append(task)
+    
+    # Build response with pre-grouped tasks
     team_tasks = []
     for member in team_members:
-        tasks = await db.tasks.find({
-            "assigned_to": member["user_id"],
-            "status": {"$nin": ["not_started", "completed"]}  # Exclude not_started and completed
-        }, {"_id": 0}).to_list(1000)
-        
-        for task in tasks:
-            if isinstance(task.get('created_at'), str):
-                task['created_at'] = datetime.fromisoformat(task['created_at'])
-        
+        tasks = tasks_by_user.get(member["user_id"], [])
         if tasks:  # Only include members with tasks
             team_tasks.append({
                 "user": member,
