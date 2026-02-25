@@ -1234,10 +1234,21 @@ async def start_timer(task_id: str, description: Optional[str] = None, session_t
         raise HTTPException(status_code=404, detail="Task not found")
     
     project_id = task.get("project_id")
+    project_name = None
     client_name = None
+    parent_task_title = None
+    
     if project_id:
         project = await db.projects.find_one({"project_id": project_id}, {"_id": 0})
-        client_name = project.get("client_name") if project else None
+        if project:
+            project_name = project.get("name")
+            client_name = project.get("client_name")
+    
+    # Check if this is a subtask
+    if task.get("parent_task_id"):
+        parent_task = await db.tasks.find_one({"task_id": task["parent_task_id"]}, {"_id": 0})
+        if parent_task:
+            parent_task_title = parent_task.get("title")
     
     timer_id = f"timer_{uuid.uuid4().hex[:12]}"
     timer_doc = {
@@ -1245,7 +1256,10 @@ async def start_timer(task_id: str, description: Optional[str] = None, session_t
         "user_id": user.user_id,
         "task_id": task_id,
         "task_title": task.get("title"),
+        "parent_task_id": task.get("parent_task_id"),
+        "parent_task_title": parent_task_title,
         "project_id": project_id,
+        "project_name": project_name,
         "client_name": client_name,
         "start_time": datetime.now(timezone.utc).isoformat(),
         "description": description
@@ -1258,7 +1272,10 @@ async def start_timer(task_id: str, description: Optional[str] = None, session_t
         "timer_id": timer_id,
         "start_time": timer_doc["start_time"],
         "task_id": task_id,
-        "task_title": task.get("title")
+        "task_title": task.get("title"),
+        "parent_task_title": parent_task_title,
+        "project_name": project_name,
+        "client_name": client_name
     }
 
 @api_router.post("/timer/stop")
