@@ -166,17 +166,26 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
   - Categories: Travel, Equipment, Office Supplies, Client Entertainment, Other
   - Status: pending → approved → paid
   - Finance role can mark as paid
-- [x] Performance Reviews CRUD
+- [x] Performance Reviews CRUD (hidden from navigation per user request)
   - Supervisor creates reviews with 1-5 star rating
   - Reviewer submits, reviewed person acknowledges
   - Includes strengths, areas for improvement, goals
-- [x] Onboarding Forms
+- [x] Onboarding Forms (hidden from navigation per user request)
   - Personal info, emergency contact, bank details
   - Education history (dynamic list)
   - Work experience history (dynamic list)
   - Submit for approval workflow
 - [x] Team Requests Summary API
   - GET /api/team-requests/pending returns all pending requests
+
+### December 2025 - V7 Navigation Refactor
+- [x] Team dropdown in sidebar with nested items:
+  - Team Members (/team)
+  - Leave Applications (/leave-reimbursement)
+  - Reimbursements (/reimbursements)
+- [x] Performance Reviews and Onboarding pages hidden from navigation
+- [x] Dropdown expand/collapse functionality with chevron icons
+- [x] Active state highlighting for nested nav items
 
 ### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
