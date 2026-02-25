@@ -63,12 +63,14 @@ export const ProposalsPage = () => {
 
   const fetchProposals = async () => {
     try {
-      const [proposalsRes, teamRes] = await Promise.all([
+      const [proposalsRes, teamRes, clientsRes] = await Promise.all([
         axios.get(`${API_URL}/proposals`, { withCredentials: true }),
-        axios.get(`${API_URL}/team`, { withCredentials: true })
+        axios.get(`${API_URL}/team`, { withCredentials: true }),
+        axios.get(`${API_URL}/clients`, { withCredentials: true })
       ]);
       setProposals(proposalsRes.data);
       setTeamMembers(teamRes.data);
+      setClients(clientsRes.data);
     } catch (error) {
       toast.error('Failed to load proposals');
     } finally {
