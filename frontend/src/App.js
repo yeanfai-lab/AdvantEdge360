@@ -17,6 +17,7 @@ import { TeamPage } from './pages/TeamPage';
 import { TimeTrackingPage } from './pages/TimeTrackingPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { ClientDetailPage } from './pages/ClientDetailPage';
+import { CompanyDetailPage } from './pages/CompanyDetailPage';
 import { FinancePage } from './pages/FinancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { LeaveApplicationsPage } from './pages/LeaveApplicationsPage';
