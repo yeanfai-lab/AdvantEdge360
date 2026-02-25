@@ -321,13 +321,38 @@ export const ProposalsPage = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Client Name</label>
-                    <Input
-                      value={formData.client_name}
-                      onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                      placeholder="Client name"
-                      required
-                    />
+                    <label className="text-sm font-medium mb-2 block">Client Contact</label>
+                    <Select 
+                      value={formData.client_name || '__custom__'} 
+                      onValueChange={(value) => {
+                        if (value === '__custom__') {
+                          setFormData({ ...formData, client_name: '' });
+                        } else {
+                          setFormData({ ...formData, client_name: value });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select or type client name" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__custom__">-- Enter Custom Name --</SelectItem>
+                        {clients.map((client) => (
+                          <SelectItem key={client.client_id} value={client.name}>
+                            {client.name} {client.company_name && `(${client.company_name})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {(!formData.client_name || !clients.find(c => c.name === formData.client_name)) && (
+                      <Input
+                        className="mt-2"
+                        value={formData.client_name}
+                        onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                        placeholder="Enter client name"
+                        required
+                      />
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Category</label>
