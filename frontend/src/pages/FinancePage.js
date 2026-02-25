@@ -373,23 +373,53 @@ export const FinancePage = () => {
       }
     });
 
+    // Add project reimbursements as expenses (grouped by month based on date)
+    const reimbursementsByMonth = {};
+    months.forEach(m => { reimbursementsByMonth[m.key] = 0; });
+    
+    reimbursements.forEach(r => {
+      if (r.date && r.status !== 'rejected') {
+        const reimbMonth = r.date.slice(0, 7);
+        if (reimbursementsByMonth[reimbMonth] !== undefined) {
+          reimbursementsByMonth[reimbMonth] += r.amount;
+        }
+        if (expensesByMonth[reimbMonth] !== undefined) {
+          expensesByMonth[reimbMonth] += r.amount;
+        }
+      }
+    });
+
     // Group expenses by head/sub-head for detailed view
     const expenseGroups = {};
     cashflowExpenses.forEach(exp => {
       const key = exp.sub_head ? `${exp.expense_head} - ${exp.sub_head}` : exp.expense_head;
       if (!expenseGroups[key]) {
-        expenseGroups[key] = { head: exp.expense_head, subHead: exp.sub_head, byMonth: {} };
+        expenseGroups[key] = { head: exp.expense_head, subHead: exp.sub_head, byMonth: {}, isReimbursement: false };
         months.forEach(m => { expenseGroups[key].byMonth[m.key] = { amount: 0, expenseId: null }; });
       }
       if (expenseGroups[key].byMonth[exp.month_year]) {
         expenseGroups[key].byMonth[exp.month_year] = { amount: exp.amount, expenseId: exp.expense_id };
       }
     });
+    
+    // Add reimbursements as a separate expense group
+    if (Object.values(reimbursementsByMonth).some(v => v > 0)) {
+      expenseGroups['_reimbursements'] = {
+        head: 'Reimbursements',
+        subHead: 'Team Expenses',
+        byMonth: {},
+        isReimbursement: true
+      };
+      months.forEach(m => {
+        expenseGroups['_reimbursements'].byMonth[m.key] = { amount: reimbursementsByMonth[m.key], expenseId: null };
+      });
+    }
 
     return {
       months,
       incomeByMonth,
       expensesByMonth,
+      reimbursementsByMonth,
       expenseGroups: Object.values(expenseGroups),
       netByMonth: months.map(m => ({
         month: m.key,
@@ -398,7 +428,7 @@ export const FinancePage = () => {
         net: incomeByMonth[m.key] - expensesByMonth[m.key]
       }))
     };
-  }, [getCashFlowMonths, feeStructure, cashflowExpenses]);
+  }, [getCashFlowMonths, feeStructure, cashflowExpenses, reimbursements]);
 
   // Calculate labor costs per project with user breakdown
   const laborCostsByProject = useMemo(() => {
