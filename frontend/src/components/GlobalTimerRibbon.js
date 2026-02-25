@@ -96,7 +96,7 @@ export const GlobalTimerRibbon = () => {
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg"
+      className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg"
       data-testid="global-timer-ribbon"
     >
       <div className="container mx-auto px-4 py-2">
