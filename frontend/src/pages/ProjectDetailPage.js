@@ -73,7 +73,9 @@ export const ProjectDetailPage = () => {
     assigned_to: ''
   });
   const [isEditProjectDialog, setIsEditProjectDialog] = useState(false);
+  const [isEditTaskDialog, setIsEditTaskDialog] = useState(false);
   const [projectForm, setProjectForm] = useState({});
+  const [editTaskForm, setEditTaskForm] = useState({});
 
   const fetchData = async () => {
     try {
