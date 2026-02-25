@@ -512,19 +512,72 @@ export const ProposalsPage = () => {
                     <td className="p-4 font-mono">{proposal.amount ? `$${proposal.amount.toLocaleString()}` : '-'}</td>
                     <td className="p-4 text-sm text-muted-foreground">v{proposal.version || 1}</td>
                     <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-1 justify-end">
-                        {proposal.status === 'draft' && (
-                          <Button size="sm" variant="ghost" onClick={() => handleApprove(proposal.proposal_id)}>
-                            <Check className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" data-testid={`actions-${proposal.proposal_id}`}>
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
-                        )}
-                        {proposal.status === 'approved' && (
-                          <Button size="sm" variant="ghost" onClick={() => handleConvert(proposal.proposal_id)}>
-                            Convert
-                          </Button>
-                        )}
-                        <ChevronRight className="h-5 w-5 text-muted-foreground mt-1" />
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/proposals/${proposal.proposal_id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          
+                          {proposal.status === 'draft' && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedProposal(proposal);
+                                setIsApprovalDialogOpen(true);
+                              }}>
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Send for Approval
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {proposal.status === 'approved' && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedProposal(proposal);
+                                setIsSendDialogOpen(true);
+                              }}>
+                                <Mail className="mr-2 h-4 w-4" />
+                                Send to Client
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleConvert(proposal.proposal_id)}>
+                                <FolderOpen className="mr-2 h-4 w-4" />
+                                Convert to Project
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {proposal.status === 'sent_to_client' && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedProposal(proposal);
+                                setIsConfirmDialogOpen(true);
+                              }}>
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Confirm Proposal
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {['confirmed', 'signed'].includes(proposal.status) && !proposal.project_id && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleConvert(proposal.proposal_id)}>
+                                <FolderOpen className="mr-2 h-4 w-4" />
+                                Convert to Project
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}
