@@ -8,13 +8,16 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Progress } from '../components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Plus, FolderKanban, ChevronRight } from 'lucide-react';
+import { Plus, FolderKanban, ChevronRight, LayoutGrid, List, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ProjectsPage = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('projectsViewMode') || 'tile');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -24,6 +27,10 @@ export const ProjectsPage = () => {
     start_date: '',
     end_date: ''
   });
+
+  useEffect(() => {
+    localStorage.setItem('projectsViewMode', viewMode);
+  }, [viewMode]);
 
   const fetchProjects = async () => {
     try {
