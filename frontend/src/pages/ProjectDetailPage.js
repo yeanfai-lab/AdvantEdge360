@@ -570,12 +570,52 @@ export const ProjectDetailPage = () => {
                           <SelectContent>
                             {taskStatuses.map((status) => (
                               <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Subtasks */}
+                  {isExpanded && subtasks.length > 0 && (
+                    <div className="ml-8 mt-2 space-y-2">
+                      {subtasks.map((subtask) => (
+                        <div 
+                          key={subtask.task_id}
+                          className="p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors flex items-center gap-3"
+                          onClick={() => openTaskDetail(subtask)}
+                        >
+                          <CornerDownRight className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{subtask.title}</span>
+                              {getStatusBadge(subtask.status)}
+                            </div>
+                          </div>
+                          <Select 
+                            value={subtask.status} 
+                            onValueChange={(value) => { 
+                              event?.stopPropagation(); 
+                              handleStatusChange(subtask.task_id, value); 
+                            }}
+                          >
+                            <SelectTrigger className="w-28 h-8 text-xs" onClick={(e) => e.stopPropagation()}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {taskStatuses.map((status) => (
+                                <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
