@@ -152,10 +152,14 @@ class TimeLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
     log_id: str
     task_id: str
+    project_id: Optional[str] = None
+    client_name: Optional[str] = None
     user_id: str
     duration_minutes: int
     description: Optional[str] = None
     date: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     billable: bool = True
     created_at: datetime
 
@@ -165,6 +169,16 @@ class TimeLogCreate(BaseModel):
     description: Optional[str] = None
     date: str
     billable: bool = True
+
+class ActiveTimer(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    timer_id: str
+    user_id: str
+    task_id: str
+    project_id: Optional[str] = None
+    client_name: Optional[str] = None
+    start_time: datetime
+    description: Optional[str] = None
 
 # ========== HELPER FUNCTIONS ==========
 
