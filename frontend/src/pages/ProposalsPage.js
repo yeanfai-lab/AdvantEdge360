@@ -31,6 +31,10 @@ export const ProposalsPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedApprover, setSelectedApprover] = useState('');
   const [driveFiles, setDriveFiles] = useState([]);
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [recipientEmail, setRecipientEmail] = useState('');
