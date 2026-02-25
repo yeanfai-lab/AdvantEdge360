@@ -41,6 +41,113 @@ api_router = APIRouter(prefix="/api")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ========== ROLE-BASED ACCESS CONTROL ==========
+
+# Role hierarchy and permissions
+ROLES = {
+    "admin": {
+        "level": 100,
+        "can_view_financial": True,
+        "can_manage_team": True,
+        "can_edit_all": True,
+        "can_delete_all": True,
+        "description": "Full access to all features"
+    },
+    "supervisor": {
+        "level": 80,
+        "can_view_financial": False,  # No financial/commercial data
+        "can_manage_team": True,  # Can manage assigned team members
+        "can_edit_all": True,  # Can edit operational data
+        "can_delete_all": False,
+        "description": "Operational access, no financial data"
+    },
+    "manager": {
+        "level": 70,
+        "can_view_financial": True,
+        "can_manage_team": True,
+        "can_edit_all": True,
+        "can_delete_all": False,
+        "description": "Project management with financial access"
+    },
+    "team_lead": {
+        "level": 50,
+        "can_view_financial": False,
+        "can_manage_team": False,
+        "can_edit_all": False,
+        "can_delete_all": False,
+        "description": "Team coordination, limited management"
+    },
+    "team_member": {
+        "level": 10,
+        "can_view_financial": False,
+        "can_manage_team": False,
+        "can_edit_all": False,
+        "can_delete_all": False,
+        "description": "Own tasks only"
+    }
+}
+
+def check_permission(user_role: str, required_permission: str) -> bool:
+    """Check if user role has required permission"""
+    role_config = ROLES.get(user_role, ROLES["team_member"])
+    return role_config.get(required_permission, False)
+
+def can_view_resource(user, resource_type: str, resource: dict) -> bool:
+    """Check if user can view a specific resource"""
+    role_config = ROLES.get(user.role, ROLES["team_member"])
+    
+    # Admin can view everything
+    if user.role == "admin":
+        return True
+    
+    # Supervisor can view operational data only
+    if user.role == "supervisor":
+        if resource_type in ["invoice", "expense", "financial_report"]:
+            return False
+        return True
+    
+    # Manager can view everything
+    if user.role == "manager":
+        return True
+    
+    # Team members can only view their own tasks or tasks they're involved in
+    if user.role == "team_member":
+        if resource_type == "task":
+            return (resource.get("assigned_to") == user.user_id or 
+                    resource.get("created_by") == user.user_id or
+                    resource.get("reviewer_id") == user.user_id)
+        if resource_type == "project":
+            return user.user_id in resource.get("team_members", []) or resource.get("created_by") == user.user_id
+        return True
+    
+    return True
+
+def filter_resources_by_role(user, resources: list, resource_type: str) -> list:
+    """Filter resources based on user role"""
+    if user.role in ["admin", "manager"]:
+        return resources
+    
+    if user.role == "supervisor":
+        # Filter out financial data
+        if resource_type in ["invoice", "expense"]:
+            return []
+        return resources
+    
+    # Team member: filter to own resources
+    if user.role == "team_member":
+        if resource_type == "task":
+            return [r for r in resources if 
+                    r.get("assigned_to") == user.user_id or 
+                    r.get("created_by") == user.user_id or
+                    r.get("reviewer_id") == user.user_id]
+        if resource_type == "project":
+            return [r for r in resources if 
+                    user.user_id in r.get("team_members", []) or 
+                    r.get("created_by") == user.user_id]
+        return resources
+    
+    return resources
+
 # ========== MODELS ==========
 
 class User(BaseModel):
