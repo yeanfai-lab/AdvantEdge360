@@ -1100,6 +1100,42 @@ async def get_my_tasks(session_token: Optional[str] = Cookie(None), authorizatio
     
     return tasks
 
+@api_router.get("/dashboard/pending-reviews")
+async def get_pending_reviews(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Get tasks where current user is the reviewer and status is under_review
+    tasks = await db.tasks.find({
+        "reviewer_id": user.user_id,
+        "status": "under_review"
+    }, {"_id": 0}).to_list(1000)
+    
+    for task in tasks:
+        if isinstance(task.get('created_at'), str):
+            task['created_at'] = datetime.fromisoformat(task['created_at'])
+        # Get project info
+        if task.get("project_id"):
+            project = await db.projects.find_one({"project_id": task["project_id"]}, {"_id": 0})
+            task["project_name"] = project.get("name") if project else None
+    
+    return tasks
+
+@api_router.get("/dashboard/pending-approvals")
+async def get_pending_approvals(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Get proposals where current user is the approver and status is pending_approval
+    proposals = await db.proposals.find({
+        "approver_id": user.user_id,
+        "status": "pending_approval"
+    }, {"_id": 0}).to_list(1000)
+    
+    for proposal in proposals:
+        if isinstance(proposal.get('created_at'), str):
+            proposal['created_at'] = datetime.fromisoformat(proposal['created_at'])
+    
+    return proposals
+
 @api_router.get("/dashboard/team-tasks")
 async def get_team_tasks(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
