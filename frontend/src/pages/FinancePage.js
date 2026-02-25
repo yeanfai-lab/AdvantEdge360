@@ -625,7 +625,7 @@ export const FinancePage = () => {
                 <h3 className="text-lg font-heading font-semibold flex items-center gap-2">
                   <FileText className="h-5 w-5" /> Project Fee Structure
                 </h3>
-                <Select value={selectedProjectId || '__none__'} onValueChange={(v) => setSelectedProjectId(v === '__none__' ? '' : v)}>
+                <Select value={selectedProjectId || '__none__'} onValueChange={(v) => { setSelectedProjectId(v === '__none__' ? '' : v); setSelectedFeeItems([]); }}>
                   <SelectTrigger className="w-64">
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
@@ -638,81 +638,145 @@ export const FinancePage = () => {
                 </Select>
               </div>
               {selectedProjectId && (
-                <Dialog open={isFeeDialogOpen} onOpenChange={setIsFeeDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => setFeeForm({ ...feeForm, project_id: selectedProjectId })}>
-                      <Plus className="mr-2 h-4 w-4" />Add Deliverable
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-lg">
-                    <DialogHeader><DialogTitle>Add Fee Structure Item</DialogTitle></DialogHeader>
-                    <form onSubmit={handleFeeSubmit} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Stage</label>
-                          <Input value={feeForm.stage} onChange={(e) => setFeeForm({ ...feeForm, stage: e.target.value })} placeholder="e.g., Design, Development" required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Deliverable</label>
-                          <Input value={feeForm.deliverable} onChange={(e) => setFeeForm({ ...feeForm, deliverable: e.target.value })} placeholder="e.g., Wireframes" required />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">% of Total Value</label>
-                          <Input type="number" step="0.01" value={feeForm.percentage} onChange={(e) => {
-                            const pct = parseFloat(e.target.value) || 0;
-                            const projectValue = getProjectValue(selectedProjectId);
-                            setFeeForm({ ...feeForm, percentage: e.target.value, amount: ((pct / 100) * projectValue).toFixed(0) });
-                          }} required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
-                          <Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} required />
+                <div className="flex gap-2">
+                  {/* Bulk Entry Dialog */}
+                  <Dialog open={isBulkEntryDialog} onOpenChange={setIsBulkEntryDialog}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />Bulk Add
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader><DialogTitle>Bulk Add Deliverables</DialogTitle></DialogHeader>
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Enter one item per line in format:<br/>
+                          <code className="bg-muted px-1 rounded">Stage | Deliverable | Percentage | Billing Date (optional)</code>
+                        </p>
+                        <Textarea 
+                          value={bulkEntryText} 
+                          onChange={(e) => setBulkEntryText(e.target.value)} 
+                          placeholder="Design | Concept Development | 10 | 2025-02-15&#10;Design | Schematic Design | 15 | 2025-03-01&#10;Development | Construction Docs | 25"
+                          rows={8}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setIsBulkEntryDialog(false)}>Cancel</Button>
+                          <Button onClick={handleBulkEntrySubmit}>Add Items</Button>
                         </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Tentative Billing Date</label>
-                        <Input type="date" value={feeForm.tentative_billing_date} onChange={(e) => setFeeForm({ ...feeForm, tentative_billing_date: e.target.value })} />
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Deliverable Status</label>
-                          <Select value={feeForm.deliverable_status} onValueChange={(v) => setFeeForm({ ...feeForm, deliverable_status: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {deliverableStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Dialog open={isFeeDialogOpen} onOpenChange={setIsFeeDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={() => setFeeForm({ ...feeForm, project_id: selectedProjectId })}>
+                        <Plus className="mr-2 h-4 w-4" />Add Deliverable
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader><DialogTitle>Add Fee Structure Item</DialogTitle></DialogHeader>
+                      <form onSubmit={handleFeeSubmit} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Stage</label>
+                            <Input value={feeForm.stage} onChange={(e) => setFeeForm({ ...feeForm, stage: e.target.value })} placeholder="e.g., Design, Development" required />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Deliverable</label>
+                            <Input value={feeForm.deliverable} onChange={(e) => setFeeForm({ ...feeForm, deliverable: e.target.value })} placeholder="e.g., Wireframes" required />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">% of Total Value</label>
+                            <Input type="number" step="0.01" value={feeForm.percentage} onChange={(e) => {
+                              const pct = parseFloat(e.target.value) || 0;
+                              const projectValue = getProjectValue(selectedProjectId);
+                              setFeeForm({ ...feeForm, percentage: e.target.value, amount: ((pct / 100) * projectValue).toFixed(0) });
+                            }} required />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
+                            <Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} required />
+                          </div>
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Invoice Status</label>
-                          <Select value={feeForm.invoice_status} onValueChange={(v) => setFeeForm({ ...feeForm, invoice_status: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {invoiceStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                          <label className="text-sm font-medium mb-2 block">Tentative Billing Date</label>
+                          <Input type="date" value={feeForm.tentative_billing_date} onChange={(e) => setFeeForm({ ...feeForm, tentative_billing_date: e.target.value })} />
                         </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Payment Status</label>
-                          <Select value={feeForm.payment_status} onValueChange={(v) => setFeeForm({ ...feeForm, payment_status: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {paymentStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Deliverable Status</label>
+                            <Select value={feeForm.deliverable_status} onValueChange={(v) => setFeeForm({ ...feeForm, deliverable_status: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {deliverableStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Invoice Status</label>
+                            <Select value={feeForm.invoice_status} onValueChange={(v) => setFeeForm({ ...feeForm, invoice_status: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {invoiceStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Payment Status</label>
+                            <Select value={feeForm.payment_status} onValueChange={(v) => setFeeForm({ ...feeForm, payment_status: v })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {paymentStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" onClick={() => setIsFeeDialogOpen(false)}>Cancel</Button>
-                        <Button type="submit">Add Item</Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => setIsFeeDialogOpen(false)}>Cancel</Button>
+                          <Button type="submit">Add Item</Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
+
+            {/* Bulk Actions Bar */}
+            {selectedFeeItems.length > 0 && (
+              <div className="flex items-center gap-4 p-3 bg-muted rounded-lg mb-4">
+                <span className="text-sm font-medium">{selectedFeeItems.length} selected</span>
+                <div className="flex gap-2">
+                  <Select onValueChange={(v) => handleBulkStatusUpdate('invoice_status', v)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Set Invoice Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {invoiceStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={(v) => handleBulkStatusUpdate('payment_status', v)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Set Payment Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={(v) => handleBulkStatusUpdate('deliverable_status', v)}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Set Deliverable Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deliverableStatuses.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedFeeItems([])}>Clear Selection</Button>
+              </div>
+            )}
 
             {!selectedProjectId ? (
               <div className="text-center py-12 text-muted-foreground">
