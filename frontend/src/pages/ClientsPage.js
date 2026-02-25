@@ -444,8 +444,13 @@ export const ClientsPage = () => {
               {companies.map((company) => {
                 const companyClients = clients.filter(c => c.company_id === company.company_id);
                 return (
-                  <Card key={company.company_id} className="p-6 hover:shadow-md transition-shadow relative">
-                    <div className="absolute top-4 right-4 flex gap-2">
+                  <Card 
+                    key={company.company_id} 
+                    className="p-6 hover:shadow-md transition-shadow relative cursor-pointer"
+                    onClick={() => navigate(`/companies/${company.company_id}`)}
+                    data-testid={`company-card-${company.company_id}`}
+                  >
+                    <div className="absolute top-4 right-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button size="icon" variant="ghost" onClick={() => handleEditCompany(company)}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -457,7 +462,13 @@ export const ClientsPage = () => {
                       <h3 className="text-xl font-heading font-semibold mb-2 pr-20">{company.name}</h3>
                       {company.industry && <p className="text-sm text-muted-foreground mb-2">{company.industry}</p>}
                       {company.website && (
-                        <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline block mb-2">
+                        <a 
+                          href={company.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-sm text-accent hover:underline block mb-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {company.website}
                         </a>
                       )}
