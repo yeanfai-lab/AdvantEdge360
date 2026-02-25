@@ -152,15 +152,30 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ## Implementation Status
 
+### February 2026 - V12 Updates
+
+#### Phase 8: Team Invitation System & Data Cleanup
+- [x] Removed "Finance" role (not needed)
+- [x] Removed "Not Started" from Dashboard Team Tasks Overview filter
+- [x] Cleared ALL data including users from database
+- [x] Implemented Team Invitation Workflow:
+  - POST /api/team/invitations - Create invitation
+  - GET /api/team/invitations - List invitations
+  - DELETE /api/team/invitations/{id} - Cancel invitation
+  - POST /api/team/invitations/{id}/resend - Resend invitation
+  - GET /api/team/invitations/verify/{token} - Verify invitation token
+- [x] First user signup automatically becomes Admin
+- [x] Invited users get their assigned role on signup
+- [x] "Invite Team Member" button on Team page for Admin/Manager
+- [x] Email invitations in DEMO MODE (stored, not sent)
+
 ### February 2026 - V11 Updates
 
 #### Phase 7: Role Permissions & UI Enhancements
 - [x] Removed "Supervisor" role completely from the system
-- [x] Added "Finance" role (can view financial data only)
 - [x] Team Lead now has "can_manage_team" permission
 - [x] Only Admin and Manager can invite team members (can_invite_team)
 - [x] Role Permissions Overview shows new permission badges
-- [x] Cleared all dummy data from database
 
 #### Phase 6: Task & Client Enhancements
 - [x] Added "Assigned" task status (between Not Started and In Progress)
@@ -178,13 +193,16 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 
 ## API Endpoints
 
-### New/Updated Endpoints (V11)
-- `GET /api/roles` - Returns 5 roles (admin, manager, team_lead, finance, team_member) with can_invite_team permission
-- `GET /api/user/permissions` - Returns can_invite_team in permissions object
-- `GET /api/dashboard/team-tasks` - Now excludes not_started AND completed tasks
+### New Endpoints (V12)
+- `POST /api/team/invitations` - Create team invitation (Admin/Manager)
+- `GET /api/team/invitations` - List all invitations (Admin/Manager)
+- `DELETE /api/team/invitations/{id}` - Cancel invitation
+- `POST /api/team/invitations/{id}/resend` - Resend with new token
+- `GET /api/team/invitations/verify/{token}` - Verify invitation (public)
 
-### V10 Endpoints
-- `GET /api/companies/{company_id}/overview` - Company detail with contacts, projects, proposals, tasks, finance
+### Updated Endpoints (V12)
+- `GET /api/roles` - Returns 4 roles only (admin, manager, team_lead, team_member)
+- `POST /api/auth/session` - Now checks for pending invitations and assigns role
 
 ---
 
