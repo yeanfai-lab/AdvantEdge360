@@ -19,7 +19,8 @@ import { ClientsPage } from './pages/ClientsPage';
 import { ClientDetailPage } from './pages/ClientDetailPage';
 import { FinancePage } from './pages/FinancePage';
 import { ReportsPage } from './pages/ReportsPage';
-import { LeaveReimbursementPage } from './pages/LeaveReimbursementPage';
+import { LeaveApplicationsPage } from './pages/LeaveApplicationsPage';
+import { ReimbursementsPage } from './pages/ReimbursementsPage';
 import './App.css';
 
 function TimerWrapper() {
