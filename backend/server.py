@@ -20,6 +20,13 @@ from google.auth.transport.requests import Request as GoogleRequest
 import warnings
 import base64
 import json
+from services.pdf_service import (
+    create_projects_pdf,
+    create_tasks_pdf,
+    create_time_logs_pdf,
+    create_team_productivity_pdf,
+    create_overview_pdf
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
