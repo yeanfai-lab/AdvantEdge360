@@ -573,22 +573,49 @@ export const TasksPage = () => {
             <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateTask} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Project *</label>
-              <Select value={taskForm.project_id} onValueChange={(value) => setTaskForm({ ...taskForm, project_id: value, parent_task_id: '' })} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p) => (
-                    <SelectItem key={p.project_id} value={p.project_id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Internal Task Toggle */}
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+              <input
+                type="checkbox"
+                id="is_internal"
+                checked={taskForm.is_internal}
+                onChange={(e) => setTaskForm({ 
+                  ...taskForm, 
+                  is_internal: e.target.checked, 
+                  project_id: e.target.checked ? '' : taskForm.project_id,
+                  parent_task_id: ''
+                })}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <label htmlFor="is_internal" className="flex-1 cursor-pointer">
+                <span className="font-medium">Internal Task</span>
+                <p className="text-xs text-muted-foreground">Not billable to any project - for internal business operations</p>
+              </label>
             </div>
+
+            {/* Project Selection - only if not internal */}
+            {!taskForm.is_internal && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Project *</label>
+                <Select 
+                  value={taskForm.project_id} 
+                  onValueChange={(value) => setTaskForm({ ...taskForm, project_id: value, parent_task_id: '' })} 
+                  required={!taskForm.is_internal}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.project_id} value={p.project_id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             {/* Nest under existing task option */}
-            {taskForm.project_id && (
+            {!taskForm.is_internal && taskForm.project_id && (
               <div>
                 <label className="text-sm font-medium mb-2 block">Nest Under Task (Optional)</label>
                 <Select value={taskForm.parent_task_id || '__none__'} onValueChange={(value) => setTaskForm({ ...taskForm, parent_task_id: value === '__none__' ? '' : value })}>
