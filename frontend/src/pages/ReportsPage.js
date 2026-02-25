@@ -77,6 +77,39 @@ export const ReportsPage = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <div className="flex justify-end gap-2 mb-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button data-testid="export-overview-btn">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Overview
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('overview/pdf', 'overview_report.pdf')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('tasks', 'tasks_export.csv')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Tasks CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('tasks/pdf', 'tasks_report.pdf')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Tasks PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('time-logs', 'time_logs_export.csv')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Time Logs CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('time-logs/pdf', 'time_logs_report.pdf')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Time Logs PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           {overview && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
