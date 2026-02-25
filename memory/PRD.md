@@ -132,6 +132,31 @@ AdvantEdge360 is a comprehensive, full-stack business operations and project man
 - [x] Task deletion with confirmation
 - [x] Clean seed data: 1 company, 1 client, 1 proposal, 1 project, 2 tasks with 2 subtasks each
 
+### December 2025 - V5 Enhancements (Phase 1, 3, 4)
+**Phase 1: Task & Time Tracking**
+- [x] Task creation with project/task nesting to auto-create subtasks
+- [x] Time tracking with Project → Task → Subtask selection
+- [x] Timer pause/resume functionality
+- [x] Manual time entry with edit/delete capabilities
+- [x] Weekly timesheet view
+
+**Phase 3: Role-Based Access Control**
+- [x] Admin: Full access to all features
+- [x] Supervisor: Operational data only, no financial access
+- [x] Manager: Project management with financial access
+- [x] Team Member: Own tasks only
+- [x] GET /api/roles endpoint for role permissions
+- [x] GET /api/user/permissions endpoint
+- [x] Team management CRUD with role editing
+- [x] Role-based task filtering
+
+**Phase 4: Finance Module**
+- [x] Project Profitability view (income, pending, expenses, labor cost, profit)
+- [x] Cash Flow 6-month projection
+- [x] Labor Cost per project (billable hours × rate)
+- [x] Expense CRUD (edit/delete)
+- [x] Expense categories (Travel, Equipment, Office Supplies, Client Entertainment, Software, Utilities, Other)
+
 ### December 2025 - Initial Overhaul
 - [x] Enhanced Proposal workflow with approval cycle
 - [x] ProposalDetailPage with full CRUD and approval controls
