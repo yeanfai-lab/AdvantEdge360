@@ -71,6 +71,12 @@ export const TeamPage = () => {
       setRoles(rolesRes.data);
       setProjects(projectsRes.data);
       setPermissions(permRes.data);
+      
+      // Fetch invitations if user can invite
+      if (permRes.data?.permissions?.can_invite_team) {
+        const invRes = await axios.get(`${API_URL}/team/invitations`, { withCredentials: true });
+        setInvitations(invRes.data);
+      }
     } catch (error) {
       toast.error('Failed to load team data');
     } finally {
@@ -83,6 +89,7 @@ export const TeamPage = () => {
   }, []);
 
   const canManageTeam = permissions?.permissions?.can_manage_team || user?.role === 'admin';
+  const canInviteTeam = permissions?.permissions?.can_invite_team || false;
 
   const handleEditMember = (member) => {
     setSelectedMember(member);
