@@ -159,24 +159,6 @@ export const ProjectDetailPage = () => {
       toast.error('Failed to cancel timer');
     }
   };
-        axios.get(`${API_URL}/tasks?project_id=${projectId}`, { withCredentials: true }),
-        axios.get(`${API_URL}/team`, { withCredentials: true }),
-        axios.get(`${API_URL}/projects/${projectId}/stats`, { withCredentials: true })
-      ]);
-      setProject(projectRes.data);
-      setTasks(tasksRes.data);
-      setTeamMembers(teamRes.data);
-      setStats(statsRes.data);
-    } catch (error) {
-      toast.error('Failed to load project');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [projectId]);
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
