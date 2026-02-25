@@ -187,6 +187,28 @@ export const ProposalsPage = () => {
     return colors[status] || 'bg-muted';
   };
 
+  const sortedProposals = [...proposals].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+    if (sortField === 'amount') {
+      aVal = aVal || 0;
+      bVal = bVal || 0;
+    }
+    if (sortOrder === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    }
+    return aVal < bVal ? 1 : -1;
+  });
+
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   }
@@ -199,6 +221,24 @@ export const ProposalsPage = () => {
           <p className="text-base text-muted-foreground">Create and manage client proposals</p>
         </div>
         <div className="flex gap-2">
+          <div className="flex border rounded-md">
+            <Button 
+              variant={viewMode === 'tile' ? 'default' : 'ghost'} 
+              size="sm" 
+              className="rounded-r-none"
+              onClick={() => setViewMode('tile')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant={viewMode === 'list' ? 'default' : 'ghost'} 
+              size="sm" 
+              className="rounded-l-none"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
           <Button variant="outline" onClick={handleConnectDrive}>
             <HardDrive className="mr-2 h-4 w-4" />
             Connect Drive
