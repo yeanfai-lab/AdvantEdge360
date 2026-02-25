@@ -151,7 +151,7 @@ export const ReimbursementsPage = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Amount (₹)</label>
+                  <label className="text-sm font-medium mb-2 block">Amount (INR)</label>
                   <Input type="number" step="0.01" value={reimbursementForm.amount} onChange={(e) => setReimbursementForm({ ...reimbursementForm, amount: e.target.value })} required />
                 </div>
                 <div>
