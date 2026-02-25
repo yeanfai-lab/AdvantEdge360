@@ -50,7 +50,9 @@ export const FinancePage = () => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [isFeeDialogOpen, setIsFeeDialogOpen] = useState(false);
   const [isEditFeeDialog, setIsEditFeeDialog] = useState(false);
+  const [isBulkEntryDialog, setIsBulkEntryDialog] = useState(false);
   const [editingFeeItem, setEditingFeeItem] = useState(null);
+  const [selectedFeeItems, setSelectedFeeItems] = useState([]);
   const [feeForm, setFeeForm] = useState({
     project_id: '',
     stage: '',
@@ -62,6 +64,7 @@ export const FinancePage = () => {
     invoice_status: 'not_invoiced',
     payment_status: 'pending'
   });
+  const [bulkEntryText, setBulkEntryText] = useState('');
 
   // Team Salary state
   const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false);
