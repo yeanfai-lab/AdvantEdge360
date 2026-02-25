@@ -246,11 +246,26 @@ export const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="team" className="space-y-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => handleExport('team-productivity', 'team_productivity_export.csv')}>
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
+          <div className="flex justify-end gap-2 mb-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button data-testid="export-team-btn">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('team-productivity', 'team_productivity_export.csv')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('team-productivity/pdf', 'team_productivity_report.pdf')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export as PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <Card className="p-6">
             <h3 className="text-xl font-heading font-semibold mb-6">Team Productivity Overview</h3>
