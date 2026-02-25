@@ -304,8 +304,14 @@ export const FinancePage = () => {
         }
       });
       
+      // Add project-tagged reimbursements as expenses
+      const projectReimbursements = reimbursements
+        .filter(r => r.project_id === project.project_id && r.status !== 'rejected')
+        .reduce((sum, r) => sum + r.amount, 0);
+      
       const totalBillableHours = Object.values(billableHoursByUser).reduce((sum, h) => sum + h, 0);
-      const profit = paidIncome - laborCost;
+      const totalExpenses = laborCost + projectReimbursements;
+      const profit = paidIncome - totalExpenses;
       
       return {
         ...project,
@@ -313,11 +319,13 @@ export const FinancePage = () => {
         paidIncome,
         pendingIncome,
         laborCost,
+        reimbursementExpenses: projectReimbursements,
+        totalExpenses,
         totalBillableHours,
         profit
       };
     });
-  }, [projects, feeStructure, timeLogs, teamSalaries]);
+  }, [projects, feeStructure, timeLogs, teamSalaries, reimbursements]);
 
   // Generate months for cash flow
   const getCashFlowMonths = useMemo(() => {
