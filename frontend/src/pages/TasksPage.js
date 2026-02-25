@@ -564,14 +564,14 @@ export const TasksPage = () => {
 
       {/* Create Task Dialog */}
       <Dialog open={isTaskDialog} onOpenChange={setIsTaskDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateTask} className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Project</label>
-              <Select value={taskForm.project_id} onValueChange={(value) => setTaskForm({ ...taskForm, project_id: value })} required>
+              <label className="text-sm font-medium mb-2 block">Project *</label>
+              <Select value={taskForm.project_id} onValueChange={(value) => setTaskForm({ ...taskForm, project_id: value, parent_task_id: '' })} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
@@ -582,8 +582,33 @@ export const TasksPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Nest under existing task option */}
+            {taskForm.project_id && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Nest Under Task (Optional)</label>
+                <Select value={taskForm.parent_task_id || '__none__'} onValueChange={(value) => setTaskForm({ ...taskForm, parent_task_id: value === '__none__' ? '' : value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Create as parent task" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Create as parent task</SelectItem>
+                    {tasks.filter(t => t.project_id === taskForm.project_id && !t.parent_task_id).map((t) => (
+                      <SelectItem key={t.task_id} value={t.task_id}>
+                        <div className="flex items-center gap-2">
+                          <CornerDownRight className="h-3 w-3" />
+                          {t.title}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">Select a parent task to create this as a subtask</p>
+              </div>
+            )}
+            
             <div>
-              <label className="text-sm font-medium mb-2 block">Task Title</label>
+              <label className="text-sm font-medium mb-2 block">Task Title *</label>
               <Input
                 value={taskForm.title}
                 onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
@@ -616,11 +641,12 @@ export const TasksPage = () => {
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Assign To</label>
-                <Select value={taskForm.assigned_to} onValueChange={(value) => setTaskForm({ ...taskForm, assigned_to: value })}>
+                <Select value={taskForm.assigned_to || '__none__'} onValueChange={(value) => setTaskForm({ ...taskForm, assigned_to: value === '__none__' ? '' : value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__none__">Unassigned</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>{member.name}</SelectItem>
                     ))}
@@ -638,9 +664,78 @@ export const TasksPage = () => {
                 <Input type="date" value={taskForm.end_date} onChange={(e) => setTaskForm({ ...taskForm, end_date: e.target.value })} />
               </div>
             </div>
+            
+            {/* Auto-create subtasks */}
+            {!taskForm.parent_task_id && (
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <label className="text-sm font-medium mb-3 block">Auto-Create Subtasks (Optional)</label>
+                <div className="space-y-2">
+                  {taskForm.subtasks_to_create.map((st, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-background rounded border">
+                      <CornerDownRight className="h-4 w-4 text-muted-foreground" />
+                      <span className="flex-1 text-sm">{st.title}</span>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => setTaskForm({
+                          ...taskForm,
+                          subtasks_to_create: taskForm.subtasks_to_create.filter((_, i) => i !== idx)
+                        })}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Input
+                      value={newSubtaskTitle}
+                      onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                      placeholder="Enter subtask title"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newSubtaskTitle.trim()) {
+                            setTaskForm({
+                              ...taskForm,
+                              subtasks_to_create: [...taskForm.subtasks_to_create, { title: newSubtaskTitle.trim() }]
+                            });
+                            setNewSubtaskTitle('');
+                          }
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        if (newSubtaskTitle.trim()) {
+                          setTaskForm({
+                            ...taskForm,
+                            subtasks_to_create: [...taskForm.subtasks_to_create, { title: newSubtaskTitle.trim() }]
+                          });
+                          setNewSubtaskTitle('');
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Press Enter or click + to add subtasks</p>
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsTaskDialog(false)}>Cancel</Button>
-              <Button type="submit">Create Task</Button>
+              <Button type="button" variant="outline" onClick={() => {
+                setIsTaskDialog(false);
+                setNewSubtaskTitle('');
+              }}>Cancel</Button>
+              <Button type="submit">
+                {taskForm.subtasks_to_create.length > 0 
+                  ? `Create Task with ${taskForm.subtasks_to_create.length} Subtasks` 
+                  : 'Create Task'}
+              </Button>
             </div>
           </form>
         </DialogContent>
