@@ -178,11 +178,26 @@ export const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="projects" className="space-y-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => handleExport('projects', 'projects_export.csv')}>
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
+          <div className="flex justify-end gap-2 mb-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button data-testid="export-projects-btn">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleExport('projects', 'projects_export.csv')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('projects/pdf', 'projects_report.pdf')}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export as PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <Card className="p-6">
             <h3 className="text-xl font-heading font-semibold mb-6">Project Performance Metrics</h3>
