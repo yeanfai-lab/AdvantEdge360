@@ -3660,6 +3660,59 @@ async def delete_leave(leave_id: str, session_token: Optional[str] = Cookie(None
 
 # --- Reimbursements ---
 
+# File upload directory
+UPLOAD_DIR = Path("/app/backend/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+@api_router.post("/upload/receipt")
+async def upload_receipt(file: UploadFile = File(...), session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Validate file type
+    allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, and PDF files are allowed")
+    
+    # Validate file size (5MB max)
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be under 5MB")
+    
+    # Generate unique filename
+    file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
+    unique_filename = f"receipt_{uuid.uuid4().hex[:12]}.{file_ext}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(content)
+    
+    # Return the URL path to access the file
+    file_url = f"/api/uploads/{unique_filename}"
+    
+    return {"file_url": file_url, "filename": unique_filename}
+
+@api_router.get("/uploads/{filename}")
+async def get_uploaded_file(filename: str):
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine content type
+    if filename.endswith('.pdf'):
+        content_type = 'application/pdf'
+    elif filename.endswith('.png'):
+        content_type = 'image/png'
+    else:
+        content_type = 'image/jpeg'
+    
+    async def file_iterator():
+        async with aiofiles.open(file_path, 'rb') as f:
+            while chunk := await f.read(8192):
+                yield chunk
+    
+    return StreamingResponse(file_iterator(), media_type=content_type)
+
 @api_router.post("/reimbursements", response_model=Reimbursement)
 async def create_reimbursement(payload: ReimbursementCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
@@ -3674,12 +3727,33 @@ async def create_reimbursement(payload: ReimbursementCreate, session_token: Opti
         "description": payload.description,
         "date": payload.date,
         "project_id": payload.project_id,
+        "receipt_url": None,
+        "is_internal": payload.project_id is None,
         "status": "pending",
         "created_at": datetime.now(timezone.utc)
     }
     await db.reimbursements.insert_one(reimbursement_doc)
     
     return Reimbursement(**reimbursement_doc)
+
+@api_router.patch("/reimbursements/{reimbursement_id}/upload-receipt")
+async def update_reimbursement_receipt(reimbursement_id: str, receipt_url: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    reimbursement = await db.reimbursements.find_one({"reimbursement_id": reimbursement_id}, {"_id": 0})
+    if not reimbursement:
+        raise HTTPException(status_code=404, detail="Reimbursement not found")
+    
+    # Only owner or admin can update receipt
+    if reimbursement["user_id"] != user.user_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.reimbursements.update_one(
+        {"reimbursement_id": reimbursement_id},
+        {"$set": {"receipt_url": receipt_url}}
+    )
+    
+    return {"message": "Receipt uploaded"}
 
 @api_router.get("/reimbursements")
 async def get_reimbursements(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
