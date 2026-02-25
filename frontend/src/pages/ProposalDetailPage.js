@@ -9,7 +9,7 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { ArrowLeft, Edit, Send, Check, X, FileText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Edit, Send, Check, X, FileText, MessageSquare, History, RotateCcw, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const categories = [
@@ -18,6 +18,16 @@ const categories = [
   'Commercial',
   'Institutional',
   'Hospitality'
+];
+
+const statusOptions = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'pending_approval', label: 'Pending Approval' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'sent_to_client', label: 'Sent to Client' },
+  { value: 'signed', label: 'Signed' },
+  { value: 'converted', label: 'Converted' },
+  { value: 'rejected', label: 'Rejected' }
 ];
 
 export const ProposalDetailPage = () => {
@@ -31,11 +41,15 @@ export const ProposalDetailPage = () => {
   const [isApproverDialog, setIsApproverDialog] = useState(false);
   const [isSendDialog, setIsSendDialog] = useState(false);
   const [isManualApprovalDialog, setIsManualApprovalDialog] = useState(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [versionHistory, setVersionHistory] = useState([]);
   const [editForm, setEditForm] = useState({});
   const [selectedApprover, setSelectedApprover] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [approverComments, setApproverComments] = useState('');
   const [manualApprovalDate, setManualApprovalDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingField, setEditingField] = useState(null);
+  const [fieldValue, setFieldValue] = useState('');
 
   const fetchProposal = async () => {
     try {
@@ -53,19 +67,56 @@ export const ProposalDetailPage = () => {
     }
   };
 
+  const fetchVersionHistory = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/proposals/${proposalId}/versions`, { withCredentials: true });
+      setVersionHistory(res.data.version_history || []);
+      setIsVersionHistoryOpen(true);
+    } catch (error) {
+      toast.error('Failed to load version history');
+    }
+  };
+
+  const handleRestoreVersion = async (versionNumber) => {
+    try {
+      await axios.post(`${API_URL}/proposals/${proposalId}/restore-version/${versionNumber}`, {}, { withCredentials: true });
+      toast.success(`Restored to version ${versionNumber}`);
+      setIsVersionHistoryOpen(false);
+      fetchProposal();
+    } catch (error) {
+      toast.error('Failed to restore version');
+    }
+  };
+
   useEffect(() => {
     fetchProposal();
   }, [proposalId]);
 
   const handleUpdate = async () => {
     try {
-      await axios.patch(`${API_URL}/proposals/${proposalId}`, editForm, { withCredentials: true });
-      toast.success('Proposal updated');
+      const res = await axios.patch(`${API_URL}/proposals/${proposalId}`, editForm, { withCredentials: true });
+      toast.success(`Proposal updated (v${res.data.version})`);
       setIsEditing(false);
       fetchProposal();
     } catch (error) {
       toast.error('Failed to update proposal');
     }
+  };
+
+  const handleInlineEdit = async (field, value) => {
+    try {
+      const res = await axios.patch(`${API_URL}/proposals/${proposalId}`, { [field]: value }, { withCredentials: true });
+      toast.success('Updated');
+      setEditingField(null);
+      fetchProposal();
+    } catch (error) {
+      toast.error('Failed to update');
+    }
+  };
+
+  const startInlineEdit = (field, currentValue) => {
+    setEditingField(field);
+    setFieldValue(currentValue || '');
   };
 
   const handleSendForInternalApproval = async () => {
