@@ -2737,6 +2737,36 @@ async def get_expenses(session_token: Optional[str] = Cookie(None), authorizatio
             expense['created_at'] = datetime.fromisoformat(expense['created_at'])
     return expenses
 
+@api_router.patch("/expenses/{expense_id}")
+async def update_expense(expense_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    expense = await db.expenses.find_one({"expense_id": expense_id}, {"_id": 0})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    allowed_fields = ["category", "amount", "description", "date", "project_id"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    await db.expenses.update_one({"expense_id": expense_id}, {"$set": filtered_updates})
+    return {"message": "Expense updated"}
+
+@api_router.delete("/expenses/{expense_id}")
+async def delete_expense(expense_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role not in ["admin", "manager", "finance"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.expenses.delete_one({"expense_id": expense_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    return {"message": "Expense deleted"}
+
 # ========== REPORTS & ANALYTICS ROUTES ==========
 
 @api_router.get("/reports/overview")
