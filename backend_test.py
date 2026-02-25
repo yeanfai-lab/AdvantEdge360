@@ -8,7 +8,7 @@ import subprocess
 import json
 
 class AdvantEdge360APITester:
-    def __init__(self, base_url="https://business-ops-demo.preview.emergentagent.com"):
+    def __init__(self, base_url="https://team-workflow-hub-1.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None

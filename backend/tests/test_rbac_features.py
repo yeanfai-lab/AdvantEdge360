@@ -8,7 +8,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://business-ops-demo.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://team-workflow-hub-1.preview.emergentagent.com').rstrip('/')
 
 # Test credentials from setup
 ADMIN_SESSION = "test_session_iter9_1772030832941"
