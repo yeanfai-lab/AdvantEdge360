@@ -3214,6 +3214,329 @@ async def delete_cashflow_expense(expense_id: str, session_token: Optional[str] 
     
     return {"message": "Cash flow expense deleted"}
 
+# ========== PUBLIC HOLIDAYS & LEAVE ACCRUAL MODELS ==========
+
+class PublicHoliday(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    holiday_id: str
+    name: str
+    date: str  # YYYY-MM-DD
+    year: int
+    created_at: datetime
+    created_by: str
+
+class PublicHolidayCreate(BaseModel):
+    name: str
+    date: str
+    year: int
+
+class LeaveAccrualPolicy(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    policy_id: str
+    leave_type: str  # casual, sick, earned, etc.
+    accrual_per_month: float  # days earned per month
+    max_carry_forward: float  # max days that can be carried to next year
+    max_accumulation: float  # max balance allowed
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class LeaveAccrualPolicyCreate(BaseModel):
+    leave_type: str
+    accrual_per_month: float
+    max_carry_forward: float = 0
+    max_accumulation: float = 30
+
+class LeaveBalance(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    balance_id: str
+    user_id: str
+    user_name: str
+    leave_type: str
+    balance: float
+    year: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+# ========== PUBLIC HOLIDAYS ROUTES ==========
+
+@api_router.get("/public-holidays", response_model=List[PublicHoliday])
+async def get_public_holidays(year: Optional[int] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    query = {"year": year} if year else {}
+    holidays = await db.public_holidays.find(query, {"_id": 0}).to_list(1000)
+    for h in holidays:
+        if isinstance(h.get('created_at'), str):
+            h['created_at'] = datetime.fromisoformat(h['created_at'])
+    return holidays
+
+@api_router.post("/public-holidays", response_model=PublicHoliday)
+async def create_public_holiday(payload: PublicHolidayCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can manage public holidays")
+    
+    holiday_id = f"holiday_{uuid.uuid4().hex[:12]}"
+    holiday_doc = {
+        "holiday_id": holiday_id,
+        "name": payload.name,
+        "date": payload.date,
+        "year": payload.year,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.user_id
+    }
+    
+    await db.public_holidays.insert_one(holiday_doc)
+    holiday_doc['created_at'] = datetime.fromisoformat(holiday_doc['created_at'])
+    return PublicHoliday(**holiday_doc)
+
+@api_router.patch("/public-holidays/{holiday_id}")
+async def update_public_holiday(holiday_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can manage public holidays")
+    
+    allowed_fields = ["name", "date", "year"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    await db.public_holidays.update_one({"holiday_id": holiday_id}, {"$set": filtered_updates})
+    return {"message": "Public holiday updated"}
+
+@api_router.delete("/public-holidays/{holiday_id}")
+async def delete_public_holiday(holiday_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can manage public holidays")
+    
+    result = await db.public_holidays.delete_one({"holiday_id": holiday_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Public holiday not found")
+    
+    return {"message": "Public holiday deleted"}
+
+# ========== LEAVE ACCRUAL POLICY ROUTES ==========
+
+@api_router.get("/leave-accrual-policies", response_model=List[LeaveAccrualPolicy])
+async def get_leave_accrual_policies(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    policies = await db.leave_accrual_policies.find({}, {"_id": 0}).to_list(100)
+    for p in policies:
+        if isinstance(p.get('created_at'), str):
+            p['created_at'] = datetime.fromisoformat(p['created_at'])
+        if p.get('updated_at') and isinstance(p['updated_at'], str):
+            p['updated_at'] = datetime.fromisoformat(p['updated_at'])
+    return policies
+
+@api_router.post("/leave-accrual-policies", response_model=LeaveAccrualPolicy)
+async def create_leave_accrual_policy(payload: LeaveAccrualPolicyCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can manage leave policies")
+    
+    # Check if policy for this leave type already exists
+    existing = await db.leave_accrual_policies.find_one({"leave_type": payload.leave_type}, {"_id": 0})
+    if existing:
+        # Update existing
+        await db.leave_accrual_policies.update_one(
+            {"leave_type": payload.leave_type},
+            {"$set": {
+                "accrual_per_month": payload.accrual_per_month,
+                "max_carry_forward": payload.max_carry_forward,
+                "max_accumulation": payload.max_accumulation,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        updated = await db.leave_accrual_policies.find_one({"leave_type": payload.leave_type}, {"_id": 0})
+        if isinstance(updated.get('created_at'), str):
+            updated['created_at'] = datetime.fromisoformat(updated['created_at'])
+        if updated.get('updated_at') and isinstance(updated['updated_at'], str):
+            updated['updated_at'] = datetime.fromisoformat(updated['updated_at'])
+        return LeaveAccrualPolicy(**updated)
+    
+    policy_id = f"policy_{uuid.uuid4().hex[:12]}"
+    policy_doc = {
+        "policy_id": policy_id,
+        "leave_type": payload.leave_type,
+        "accrual_per_month": payload.accrual_per_month,
+        "max_carry_forward": payload.max_carry_forward,
+        "max_accumulation": payload.max_accumulation,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": None
+    }
+    
+    await db.leave_accrual_policies.insert_one(policy_doc)
+    policy_doc['created_at'] = datetime.fromisoformat(policy_doc['created_at'])
+    return LeaveAccrualPolicy(**policy_doc)
+
+@api_router.patch("/leave-accrual-policies/{policy_id}")
+async def update_leave_accrual_policy(policy_id: str, updates: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can manage leave policies")
+    
+    allowed_fields = ["accrual_per_month", "max_carry_forward", "max_accumulation"]
+    filtered_updates = {k: v for k, v in updates.items() if k in allowed_fields}
+    filtered_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.leave_accrual_policies.update_one({"policy_id": policy_id}, {"$set": filtered_updates})
+    return {"message": "Leave accrual policy updated"}
+
+@api_router.delete("/leave-accrual-policies/{policy_id}")
+async def delete_leave_accrual_policy(policy_id: str, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can manage leave policies")
+    
+    result = await db.leave_accrual_policies.delete_one({"policy_id": policy_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Leave accrual policy not found")
+    
+    return {"message": "Leave accrual policy deleted"}
+
+# ========== LEAVE BALANCE ROUTES ==========
+
+@api_router.get("/leave-balances")
+async def get_leave_balances(user_id: Optional[str] = None, year: Optional[int] = None, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    current_year = year or datetime.now().year
+    
+    # Get all team members
+    if user.role in ["admin", "manager", "supervisor"]:
+        query = {}
+        if user_id:
+            query["user_id"] = user_id
+    else:
+        query = {"user_id": user.user_id}
+    
+    team_members = await db.users.find(query, {"_id": 0}).to_list(1000)
+    policies = await db.leave_accrual_policies.find({}, {"_id": 0}).to_list(100)
+    
+    balances = []
+    for member in team_members:
+        member_id = member.get('user_id')
+        member_name = member.get('name', 'Unknown')
+        date_of_joining = member.get('date_of_joining')
+        
+        # Calculate months worked
+        if date_of_joining:
+            try:
+                doj = datetime.fromisoformat(date_of_joining.replace('Z', '+00:00')) if isinstance(date_of_joining, str) else date_of_joining
+                now = datetime.now(timezone.utc)
+                # Calculate full months worked
+                months_worked = (now.year - doj.year) * 12 + (now.month - doj.month)
+                if now.day < doj.day:
+                    months_worked -= 1
+                months_worked = max(0, months_worked)
+            except:
+                months_worked = 12  # Default to 12 if DOJ not parseable
+        else:
+            months_worked = 12  # Default
+        
+        for policy in policies:
+            leave_type = policy.get('leave_type')
+            accrual_per_month = policy.get('accrual_per_month', 0)
+            max_accumulation = policy.get('max_accumulation', 30)
+            
+            # Check existing balance record
+            existing = await db.leave_balances.find_one({
+                "user_id": member_id,
+                "leave_type": leave_type,
+                "year": current_year
+            }, {"_id": 0})
+            
+            if existing:
+                balance = existing.get('balance', 0)
+            else:
+                # Calculate accrued balance based on months worked
+                accrued = months_worked * accrual_per_month
+                balance = min(accrued, max_accumulation)
+            
+            # Get used leaves for this type
+            leaves_query = {
+                "user_id": member_id,
+                "leave_type": leave_type,
+                "status": {"$in": ["approved", "pending"]}
+            }
+            used_leaves = await db.leaves.find(leaves_query, {"_id": 0}).to_list(1000)
+            
+            total_used = 0
+            for leave in used_leaves:
+                if leave.get('days'):
+                    total_used += leave['days']
+            
+            available_balance = balance - total_used
+            
+            balances.append({
+                "user_id": member_id,
+                "user_name": member_name,
+                "leave_type": leave_type,
+                "accrued_balance": balance,
+                "used": total_used,
+                "available": available_balance,
+                "months_worked": months_worked,
+                "year": current_year
+            })
+    
+    return balances
+
+@api_router.post("/leave-balances/adjust")
+async def adjust_leave_balance(payload: dict, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_user_from_token(session_token, authorization)
+    
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can adjust leave balances")
+    
+    user_id = payload.get('user_id')
+    leave_type = payload.get('leave_type')
+    new_balance = payload.get('balance')
+    year = payload.get('year', datetime.now().year)
+    
+    if not all([user_id, leave_type, new_balance is not None]):
+        raise HTTPException(status_code=400, detail="Missing required fields")
+    
+    # Upsert balance
+    await db.leave_balances.update_one(
+        {"user_id": user_id, "leave_type": leave_type, "year": year},
+        {"$set": {
+            "balance": new_balance,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": "Leave balance adjusted"}
+
+# ========== EMAIL NOTIFICATION SERVICE (DEMO MODE) ==========
+
+async def send_email_notification(to_email: str, subject: str, body: str):
+    """
+    Demo mode email notification service.
+    In production, this will use Gmail API with provided credentials.
+    """
+    # Log the email that would be sent (demo mode)
+    print(f"[EMAIL DEMO] To: {to_email}, Subject: {subject}")
+    print(f"[EMAIL DEMO] Body: {body[:100]}...")
+    
+    # Store notification in database for demo purposes
+    notification_doc = {
+        "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+        "to_email": to_email,
+        "subject": subject,
+        "body": body,
+        "status": "demo_sent",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.email_notifications.insert_one(notification_doc)
+    return True
+
 # ========== PHASE 2: TEAM MANAGEMENT ROUTES ==========
 
 # --- Leave Applications ---
