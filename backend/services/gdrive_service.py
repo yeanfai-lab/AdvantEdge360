@@ -4,6 +4,8 @@ Uses Service Account with Domain-Wide Delegation
 """
 import os
 import io
+import json
+import base64
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
@@ -12,6 +14,7 @@ from googleapiclient.errors import HttpError
 # Configuration
 GDRIVE_FOLDER_ID = os.environ.get("GDRIVE_FOLDER_ID", "18YABaK9mbwAIGaHBEl1mDbV9XldKJ4LL")
 GDRIVE_CREDENTIALS_FILE = os.environ.get("GDRIVE_CREDENTIALS_FILE", "/app/backend/gmail_service_account.json")
+GDRIVE_CREDENTIALS_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")  # Base64 encoded JSON
 GDRIVE_ENABLED = os.environ.get("GDRIVE_ENABLED", "false").lower() == "true"
 GDRIVE_USER_EMAIL = os.environ.get("GDRIVE_USER_EMAIL", "360@advantedgeadvisory.co.in")
 
@@ -30,18 +33,40 @@ SUBFOLDERS = {
 _subfolder_cache = {}
 
 
+def get_credentials_info():
+    """Get service account credentials from file or environment variable"""
+    # First try environment variable (base64 encoded JSON)
+    if GDRIVE_CREDENTIALS_JSON:
+        try:
+            json_str = base64.b64decode(GDRIVE_CREDENTIALS_JSON).decode('utf-8')
+            return json.loads(json_str)
+        except Exception as e:
+            print(f"Error decoding GOOGLE_SERVICE_ACCOUNT_JSON: {e}")
+    
+    # Fall back to file
+    if os.path.exists(GDRIVE_CREDENTIALS_FILE):
+        try:
+            with open(GDRIVE_CREDENTIALS_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading credentials file: {e}")
+    
+    return None
+
+
 def get_drive_service():
     """Create Google Drive API service with domain-wide delegation"""
     if not GDRIVE_ENABLED:
         return None
     
-    if not os.path.exists(GDRIVE_CREDENTIALS_FILE):
-        print(f"Google Drive credentials file not found: {GDRIVE_CREDENTIALS_FILE}")
+    credentials_info = get_credentials_info()
+    if not credentials_info:
+        print("Google Drive credentials not found in env var or file")
         return None
     
     try:
-        credentials = service_account.Credentials.from_service_account_file(
-            GDRIVE_CREDENTIALS_FILE,
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info,
             scopes=SCOPES
         )
         # Delegate to a user in the domain
