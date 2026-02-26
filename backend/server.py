@@ -4205,6 +4205,78 @@ async def get_uploaded_file(filename: str):
     
     return StreamingResponse(file_iterator(), media_type=content_type)
 
+@api_router.post("/upload/document")
+async def upload_document(
+    file: UploadFile = File(...),
+    folder_type: str = Query("documents", description="Folder type: proposals, documents, attachments"),
+    subfolder: str = Query(None, description="Optional subfolder name (e.g., project name)"),
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None)
+):
+    """Upload a document to Google Drive"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    # Validate file size (10MB max for documents)
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be under 10MB")
+    
+    # Generate unique filename
+    file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
+    original_name = file.filename.rsplit('.', 1)[0] if '.' in file.filename else file.filename
+    unique_filename = f"{original_name}_{uuid.uuid4().hex[:8]}.{file_ext}"
+    
+    # Try to upload to Google Drive
+    if GDRIVE_ENABLED:
+        gdrive_result = await upload_file_to_drive(
+            file_content=content,
+            filename=unique_filename,
+            mime_type=file.content_type or 'application/octet-stream',
+            folder_type=folder_type,
+            subfolder_name=subfolder
+        )
+        
+        if gdrive_result.get('success'):
+            return {
+                "file_url": gdrive_result.get('view_link'),
+                "download_url": gdrive_result.get('download_link'),
+                "file_id": gdrive_result.get('file_id'),
+                "filename": unique_filename,
+                "original_filename": file.filename,
+                "storage": "google_drive"
+            }
+        else:
+            # If Drive upload failed, return error
+            raise HTTPException(status_code=500, detail=f"Failed to upload to Google Drive: {gdrive_result.get('error')}")
+    
+    # Fallback to local storage if Drive not enabled
+    file_path = UPLOAD_DIR / unique_filename
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(content)
+    
+    return {
+        "file_url": f"/api/uploads/{unique_filename}",
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "storage": "local"
+    }
+
+@api_router.get("/gdrive/files")
+async def list_gdrive_files(
+    folder_type: str = Query(None, description="Folder type: receipts, proposals, documents, attachments"),
+    subfolder: str = Query(None, description="Optional subfolder name"),
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None)
+):
+    """List files in Google Drive folder"""
+    user = await get_user_from_token(session_token, authorization)
+    
+    if not GDRIVE_ENABLED:
+        return {"success": False, "demo_mode": True, "files": []}
+    
+    result = await list_files_in_folder(folder_type, subfolder)
+    return result
+
 @api_router.post("/reimbursements", response_model=Reimbursement)
 async def create_reimbursement(payload: ReimbursementCreate, session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     user = await get_user_from_token(session_token, authorization)
