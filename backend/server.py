@@ -4156,16 +4156,33 @@ async def upload_receipt(file: UploadFile = File(...), session_token: Optional[s
     # Generate unique filename
     file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
     unique_filename = f"receipt_{uuid.uuid4().hex[:12]}.{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
     
-    # Save file
+    # Try to upload to Google Drive first
+    if GDRIVE_ENABLED:
+        gdrive_result = await upload_file_to_drive(
+            file_content=content,
+            filename=unique_filename,
+            mime_type=file.content_type,
+            folder_type="receipts"
+        )
+        
+        if gdrive_result.get('success'):
+            return {
+                "file_url": gdrive_result.get('view_link'),
+                "download_url": gdrive_result.get('download_link'),
+                "file_id": gdrive_result.get('file_id'),
+                "filename": unique_filename,
+                "storage": "google_drive"
+            }
+    
+    # Fallback to local storage
+    file_path = UPLOAD_DIR / unique_filename
     async with aiofiles.open(file_path, 'wb') as f:
         await f.write(content)
     
-    # Return the URL path to access the file
     file_url = f"/api/uploads/{unique_filename}"
     
-    return {"file_url": file_url, "filename": unique_filename}
+    return {"file_url": file_url, "filename": unique_filename, "storage": "local"}
 
 @api_router.get("/uploads/{filename}")
 async def get_uploaded_file(filename: str):
