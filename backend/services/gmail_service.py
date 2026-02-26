@@ -4,6 +4,8 @@ Uses Service Account with Domain-Wide Delegation
 """
 import os
 import base64
+import json
+import tempfile
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from google.oauth2 import service_account
@@ -13,10 +15,32 @@ from googleapiclient.errors import HttpError
 # Configuration
 GMAIL_SENDER_EMAIL = os.environ.get("GMAIL_SENDER_EMAIL", "360@advantedgeadvisory.co.in")
 GMAIL_CREDENTIALS_FILE = os.environ.get("GMAIL_CREDENTIALS_FILE", "/app/backend/gmail_service_account.json")
+GMAIL_CREDENTIALS_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")  # Base64 encoded JSON
 GMAIL_ENABLED = os.environ.get("GMAIL_ENABLED", "false").lower() == "true"
 
 # Gmail API Scopes
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+
+
+def get_credentials_info():
+    """Get service account credentials from file or environment variable"""
+    # First try environment variable (base64 encoded JSON)
+    if GMAIL_CREDENTIALS_JSON:
+        try:
+            json_str = base64.b64decode(GMAIL_CREDENTIALS_JSON).decode('utf-8')
+            return json.loads(json_str)
+        except Exception as e:
+            print(f"Error decoding GOOGLE_SERVICE_ACCOUNT_JSON: {e}")
+    
+    # Fall back to file
+    if os.path.exists(GMAIL_CREDENTIALS_FILE):
+        try:
+            with open(GMAIL_CREDENTIALS_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading credentials file: {e}")
+    
+    return None
 
 
 def get_gmail_service():
@@ -24,13 +48,14 @@ def get_gmail_service():
     if not GMAIL_ENABLED:
         return None
     
-    if not os.path.exists(GMAIL_CREDENTIALS_FILE):
-        print(f"Gmail credentials file not found: {GMAIL_CREDENTIALS_FILE}")
+    credentials_info = get_credentials_info()
+    if not credentials_info:
+        print("Gmail credentials not found in env var or file")
         return None
     
     try:
-        credentials = service_account.Credentials.from_service_account_file(
-            GMAIL_CREDENTIALS_FILE,
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info,
             scopes=SCOPES
         )
         # Delegate to the sender email (must be in Google Workspace domain)
