@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Cookie, Response, Header, UploadFile, File, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Cookie, Response, Header, UploadFile, File, Query, Request
 from fastapi.responses import StreamingResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -25,6 +25,10 @@ from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from services.gmail_service import (
+    send_email, get_invitation_email, get_leave_status_email, 
+    get_reimbursement_status_email, GMAIL_ENABLED
+)
 from services.pdf_service import (
     create_projects_pdf,
     create_tasks_pdf,
