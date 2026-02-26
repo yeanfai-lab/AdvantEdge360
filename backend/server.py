@@ -1920,16 +1920,37 @@ async def create_invitation(payload: InvitationCreate, session_token: Optional[s
     
     await db.team_invitations.insert_one(invitation_doc)
     
-    # Store email notification (demo mode)
+    # Get app URL for invitation link
+    app_url = os.environ.get("APP_URL", "https://advantedge360.co.in")
+    
+    # Send email via Gmail service
+    subject, body_text, body_html = get_invitation_email(
+        invitee_name=payload.name,
+        inviter_name=user.name,
+        role=payload.role,
+        app_url=app_url,
+        token=token
+    )
+    
+    email_result = await send_email(
+        to=payload.email,
+        subject=subject,
+        body_text=body_text,
+        body_html=body_html
+    )
+    
+    # Store email notification record
     email_doc = {
         "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
         "type": "team_invitation",
         "recipient_email": payload.email,
         "recipient_name": payload.name,
-        "subject": f"You're invited to join AdvantEdge360",
-        "body": f"Hi {payload.name},\n\n{user.name} has invited you to join AdvantEdge360 as a {payload.role.replace('_', ' ').title()}.\n\nClick the link below to accept your invitation and set up your account:\n\n[Invitation Link with token: {token}]\n\nThis invitation expires in 7 days.\n\nBest regards,\nAdvantEdge360 Team",
-        "status": "pending",
-        "demo_mode": True,
+        "subject": subject,
+        "body": body_text,
+        "status": "sent" if email_result.get("success") else "pending",
+        "demo_mode": not GMAIL_ENABLED,
+        "gmail_message_id": email_result.get("message_id"),
+        "error": email_result.get("error"),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.email_notifications.insert_one(email_doc)
@@ -1941,8 +1962,9 @@ async def create_invitation(payload: InvitationCreate, session_token: Optional[s
         "role": payload.role,
         "token": token,
         "expires_at": expires_at.isoformat(),
-        "demo_mode": True,
-        "message": "Invitation created. Email notification stored (demo mode - not actually sent)"
+        "email_sent": email_result.get("success", False),
+        "demo_mode": not GMAIL_ENABLED,
+        "message": "Invitation created and email sent" if email_result.get("success") else "Invitation created. Email stored (Gmail not configured)"
     }
 
 @api_router.get("/team/invitations")
