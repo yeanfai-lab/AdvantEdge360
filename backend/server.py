@@ -2463,7 +2463,7 @@ async def connect_drive(session_token: Optional[str] = Cookie(None), authorizati
     user = await get_user_from_token(session_token, authorization)
     
     try:
-        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/drive/callback"
+        redirect_uri = os.environ.get("APP_URL", "") + "/api/drive/callback"
         
         flow = Flow.from_client_config(
             {
@@ -2495,7 +2495,7 @@ async def connect_drive(session_token: Optional[str] = Cookie(None), authorizati
 @api_router.get("/drive/callback")
 async def drive_callback(code: str = Query(...), state: str = Query(...)):
     try:
-        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/drive/callback"
+        redirect_uri = os.environ.get("APP_URL", "") + "/api/drive/callback"
         
         flow = Flow.from_client_config(
             {
@@ -2530,7 +2530,7 @@ async def drive_callback(code: str = Query(...), state: str = Query(...)):
             upsert=True
         )
         
-        frontend_url = os.getenv("REACT_APP_BACKEND_URL", "").replace("/api", "")
+        frontend_url = os.environ.get("APP_URL", "").replace("/api", "")
         return RedirectResponse(url=f"{frontend_url}/proposals?drive_connected=true")
     
     except Exception as e:
@@ -2592,7 +2592,7 @@ async def connect_gmail(session_token: Optional[str] = Cookie(None), authorizati
     user = await get_user_from_token(session_token, authorization)
     
     try:
-        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/gmail/callback"
+        redirect_uri = os.environ.get("APP_URL", "") + "/api/gmail/callback"
         
         flow = Flow.from_client_config(
             {
@@ -2629,7 +2629,7 @@ async def connect_gmail(session_token: Optional[str] = Cookie(None), authorizati
 @api_router.get("/gmail/callback")
 async def gmail_callback(code: str = Query(...), state: str = Query(...)):
     try:
-        redirect_uri = os.environ.get("REACT_APP_BACKEND_URL", "") + "/api/gmail/callback"
+        redirect_uri = os.environ.get("APP_URL", "") + "/api/gmail/callback"
         
         flow = Flow.from_client_config(
             {
@@ -2667,7 +2667,7 @@ async def gmail_callback(code: str = Query(...), state: str = Query(...)):
             upsert=True
         )
         
-        frontend_url = os.getenv("REACT_APP_BACKEND_URL", "").replace("/api", "")
+        frontend_url = os.environ.get("APP_URL", "").replace("/api", "")
         return RedirectResponse(url=f"{frontend_url}/clients?gmail_connected=true")
     
     except Exception as e:
