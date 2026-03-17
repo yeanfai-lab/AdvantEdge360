@@ -14,7 +14,7 @@ from datetime import datetime
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://proj-hub-fin.preview.emergentagent.com"
+    BASE_URL = "https://project-hub-360.preview.emergentagent.com"
 
 # Admin session token created by test setup
 ADMIN_SESSION_TOKEN = "test_session_1772046822258"

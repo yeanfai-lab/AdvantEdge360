@@ -1,0 +1,204 @@
+<analysis>**original_problem_statement:**
+The user wants to build a comprehensive, full-stack business operations and project management suite called AdvantEdge360.
+
+**PRODUCT REQUIREMENTS (PRD):**
+The user has provided extensive requirements in multiple phases. Key modules include:
+1.  **Core:** Client Management, Proposal & Project Management, Task & Sub-Task Management.
+2.  **Team:** CRUD for team members, roles, assignments, and approval workflows for reimbursements, leave, and performance reviews. An email invitation system for new members.
+3.  **Time Tracking:** Global timer with project/task selection and manual entry. A manager view to see all active timers.
+4.  **RBAC:** Admin, Manager, and Team Member roles.
+5.  **Finance:** Detailed tracking of project income, expenses, cash flow, and profitability.
+6.  **Reporting:** A self-service BI drag-and-drop reporting system.
+7.  **Integrations:** Google Drive (for file storage) and Gmail (for notifications).
+8.  **Dashboard:** An overview of pending approvals, tasks, and project statuses.
+9.  **Currency:** All monetary values must be displayed in INR.
+
+**User's preferred language**: English
+
+**what currently exists?**
+A feature-rich full-stack application with a React frontend, a FastAPI backend, and a MongoDB database. The application has functional UI and backend implementations for most major modules requested by the user.
+
+Recent work includes:
+*   Fixing all currency displays to INR.
+*   Adding an Assigned task status and an Internal (non-billable) task option.
+*   Implementing a company detail view and clickable company cards.
+*   Refactoring team roles (removing Supervisor) and adding an invitation workflow.
+*   Integrating a Super Admin feature to grant specific users admin rights on deployment.
+*   Adding the company logo to the UI.
+*   Implementing backend services for Gmail (notifications) and Google Drive (file uploads). These integrations are coded and configured but require final user authorization in Google Workspace to be fully active.
+*   Fixing multiple deployment-readiness issues identified by the deployment agent.
+
+The backend is still largely a monolith (), though some models and services have been moved to separate files.
+
+**Last working item**:
+*   **Last item agent was working**: The user provided a large, new list of feature requests and modifications across several modules (Clients, Proposals, Tasks, Time Tracking) and asked to remove all Zoho Sign integration code. The agent acknowledged this comprehensive request and was about to begin implementation.
+*   **Status**: NOT STARTED
+*   **Agent Testing Done**: N
+*   **Which testing method agent to use?**: both (frontend and backend testing agent after implementing the batch of changes).
+*   **User Testing Done**: N
+
+**All Pending/In progress Issue list**:
+*   **Issue 1: Implement User's Latest Request List (P0)**
+    *   **Description**: The user has provided a multi-point list of required changes and new features. This is the highest priority task.
+    *   **Status**: NOT STARTED
+
+**Issues Detail:**
+*   **Issue 1: User's Latest Request List**
+    *   **Attempted fixes**: None. This is a new batch of requests.
+    *   **Next debug checklist**:
+        *   **Clients Tab:**
+            1.  Rename  field to .
+            2.  Add a contact type (Individual vs. Corporate). If Corporate, link to a company.
+            3.  Add a dropdown on the contact detail view to create a new task, project, or proposal for that contact.
+            4.  Add a feature to create a contact directly from the Companies tab, linked to that company.
+            5.  Ensure all fields from the add new form are visible in the detail view for both contacts and companies.
+            6.  Implement a toggle for tile vs. list view for contacts and companies.
+        *   **Proposals:**
+            1.  Ensure all fields from the add new form are visible in the proposal detail view.
+            2.  Associate the company name with the proposal, in addition to the contact.
+            3.  Make the proposal category dropdown customizable by the Admin.
+            4.  Rename Scope / area to be worked on to Total area of the project - in sq.mt. and enforce numerical input.
+        *   **Tasks:**
+            1.  Unify the Add New Task form across all pages (Projects, Tasks, Dashboard) to be consistent.
+            2.  Add an option to create a sub-task and nest it under a parent task.
+        *   **Time Tracking:**
+            1.  Implement a view for Managers to see the status of all team members currently tracking time and their active tasks.
+        *   **Integrations:**
+            1.  Test the Google Drive integration.
+            2.  **Remove all Zoho Sign related options** and approval workflows.
+    *   **Why fix this issue and what will be achieved with the fix?**: Fulfills the user's explicit new requirements to improve usability and add features across the application.
+    *   **Status**: NOT STARTED
+    *   **Is recurring issue?** N
+    *   **Should Test frontend/backend/both after fix?**: both
+    *   **Blocked on other issue**: No.
+
+**In progress Task List**:
+None. The previous tasks were completed before the user provided a new list.
+
+**Upcoming and Future Tasks**
+*   **Upcoming Tasks:**
+    *   **P0: Backend Refactoring**: The user has explicitly approved refactoring the monolithic  file. The agent started this by creating a new directory structure but abandoned the full migration. This remains a critical technical debt that must be addressed to improve maintainability. Plan to break  into a modular structure (, ).
+*   **Future Tasks:**
+    *   **P1: Activate Full Email Notifications**: The Gmail integration is coded. Once the user confirms domain-wide delegation is authorized, test and activate it for leave, reimbursement, and other status updates.
+    *   **P2: Task Management Enhancements**: Implement drag-and-drop for task hierarchy, task dependencies, and activity logs.
+    *   **P2: Native Mobile App**: Plan and develop a native mobile app.
+
+**Completed work in this session**
+-   **Multi-Feature Implementation**:
+    -   Finalized currency update to INR across the app.
+    -   Added Assigned as a new task status.
+    -   Added Internal as a non-billable task type.
+    -   Created a Company Detail Page and made company tiles clickable.
+-   **Team & Auth Enhancements**:
+    -   Refactored roles to remove Supervisor and adjusted permissions for Team Lead.
+    -   Implemented a full team invitation workflow (backend endpoint + frontend UI).
+    -   Added a  to the  to guarantee admin access on a deployed environment with existing data.
+    -   Cleared all dummy data from the database.
+-   **Integration Implementation (Code-Level)**:
+    -   Implemented  to send emails via a service account for notifications.
+    -   Implemented  to upload files (e.g., receipts) to a dedicated Google Drive folder.
+    -   Configured service account credentials to be loaded from environment variables for deployment.
+-   **UI/UX Improvements**:
+    -   Added the user's logo to the login page and the main application sidebar.
+-   **Deployment Readiness**:
+    -   Used the deployment agent to find and fix several N+1 query bugs and other performance issues.
+    -   Added service account JSON file to .
+
+**Earlier issues found/mentioned but not fixed**
+*   The entire list under **All Pending/In progress Issue list** was mentioned by the user in their last message but has not been started.
+*   **Zoho Sign Removal**: The user explicitly asked to remove Zoho Sign options and workflows. This is part of the pending task list and has not been executed.
+
+**Known issue recurrence from previous fork**
+N/A
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+*   **Frontend**: React, React Router, Tailwind CSS, shadcn/ui
+*   **Backend**: FastAPI, Pydantic, Motor
+*   **Database**: MongoDB
+*   **Authentication**: JWT with Google OAuth2, Super Admin override.
+*   **Integrations**: Google API Client (, ) for Gmail and Google Drive.
+*   **Deployment**: Credentials management via base64 encoded environment variables.
+
+**key DB schema**
+*   **Existing**: , , , , , , etc.
+*   **New Models**:  .
+
+**changes in tech stack**
+*   , ,  added to  for Google integrations.
+
+**All files of reference**
+*   : Heavily modified. All routes still live here. Contains new endpoints for invitations, company overview, and data clearing. Also has logic for Super Admin and calls to new services.
+*   : New file for sending emails.
+*   : New file for uploading files.
+*   : Updated with , , , , and .
+*   : Major updates to support the new invitation flow.
+*   : Updated to make company cards clickable.
+*   : New page created.
+*   : Updated with route for .
+*   : Updated to display the logo.
+*   : Updated to display the logo.
+*   : Updated to ignore the service account JSON file.
+
+**Areas that need refactoring**:
+*   **CRITICAL: Backend Monolith**: The  file is still a massive monolith containing all API routes. The agent attempted a refactor but abandoned it. This is the most significant piece of technical debt and an approved task. The next agent should prioritize completing this refactor.
+
+**key api endpoints**
+*   : Create and send a new team member invitation.
+*   : Get all pending invitations.
+*   : Now uploads files to Google Drive.
+*   : New endpoint to upload documents to Google Drive.
+*   : Get detailed information for a company.
+
+**Critical Info for New Agent**
+*   **Top Priority**: The user's latest, extensive list of feature requests (summarized in ) is the immediate task (P0).
+*   **Zoho Sign Removal**: A key part of the user's request is to **remove all Zoho Sign related code** and UI elements.
+*   **Backend Refactor is Blocked but Critical**: Do not start the backend refactor until the current feature list is complete. However, it is an approved and high-priority upcoming task.
+*   **Google Integrations Status**: The code for Gmail and Google Drive is implemented and configured. However, they rely on the user having correctly set up domain-wide delegation in their Google Workspace. You must assume they are not fully functional until tested. The user stated the delegation is done, so the next step is to test it.
+*   **Super Admin**: The email  is configured as a Super Admin in the  file, ensuring it always gets admin privileges on login.
+
+**documents and test reports created in this job**
+*    (updated multiple times)
+*    (multiple reports, all showing passed tests for completed features).
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User Message (Latest)**: Provided a long list of new features and changes for Clients, Proposals, Tasks, and Time Tracking. Also requested to remove Zoho Sign integration. (STATUS: PENDING)
+2.  **User Message**: Asked to test Gmail integration now that delegation is supposedly done. (STATUS: PENDING)
+3.  **User Message**: Confirmed they completed the Google Workspace delegation setup. (STATUS: ADDRESSED)
+4.  **User Message**: Asked if invitation emails will be sent. (STATUS: ADDRESSED)
+5.  **User Message**: Asked to run the deployment agent again. (STATUS: ADDRESSED & FIXED)
+6.  **User Message**: Asked for steps to integrate Zoho Sign. (STATUS: ADDRESSED, but now moot as user wants it removed)
+7.  **User Message**: Skipped the password management feature. (STATUS: ADDRESSED)
+8.  **User Message**: Requested CRUD & password management for team members. (STATUS: REJECTED by user)
+9.  **User Message**: Provided the Google Drive Folder ID. (STATUS: IMPLEMENTED)
+10. **User Message**: Asked for steps to set up a dedicated Google Drive folder. (STATUS: ADDRESSED)
+
+**Project Health Check:**
+*   **Broken**: None.
+*   **Mocked**:
+    *   **Gmail Integration**: Coded, but requires real-world testing to confirm user's domain-wide delegation works.
+    *   **Google Drive Integration**: Coded, but requires real-world testing.
+*   **To Be Removed**: All code related to Zoho Sign.
+
+**3rd Party Integrations**
+*   **Emergent-managed Google Auth**: In use for login.
+*   **Gmail API**: Code implemented for sending emails. Needs testing and user-side authorization confirmation.
+*   **Google Drive API**: Code implemented for file storage. Needs testing and user-side authorization confirmation.
+*   : Used for PDF generation.
+*   **Zoho Sign**: Marked for **complete removal**.
+
+**Testing status**
+*   **Testing agent used after significant changes**: YES. Used multiple times, all recent tests passed.
+*   **Deployment agent used**: YES. Identified several N+1 query issues which were subsequently fixed.
+*   **Test files created**: None.
+*   **Known regressions**: None.
+
+**Credentials to test flow:**
+*   Use the Google Social Login flow.
+*   The email  is configured as  in  and will be granted Admin rights upon login.
+
+**What agent forgot to execute**
+*   The agent started a backend refactor by creating new directories (, ) but abandoned the effort and kept all routes in the monolithic . This critical task remains incomplete.
+*   The user's most recent request to remove Zoho Sign integration was acknowledged but not yet implemented.</analysis>

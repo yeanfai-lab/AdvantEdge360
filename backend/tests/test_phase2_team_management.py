@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timedelta
 
 # Use environment variable for base URL
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://proj-hub-fin.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://project-hub-360.preview.emergentagent.com').rstrip('/')
 
 # Test credentials created for Phase 2 testing
 ADMIN_TOKEN = "test_phase2_session_1772032728013"
